@@ -114,7 +114,7 @@ git clone https://github.com/orcunbaslak/solarian-datalogger /home/pi/solarian-d
 ```
 2. Create a configuration file from the sample
 ```sh
-cp config-sample.yml config.yml
+cp sample-config.yml config.yml
 ```
 4. Edit the configuration file `config.yml`
 ```sh

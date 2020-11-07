@@ -114,3 +114,4 @@ venv.bak/
 *.gz
 *.txt.gz
 *.json.gz
+config*.yml
