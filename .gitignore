@@ -111,7 +111,6 @@ venv.bak/
 .mypy_cache/
 
 # data files
-*.txt
 *.gz
 *.txt.gz
 *.json.gz
