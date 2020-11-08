@@ -12,6 +12,11 @@ config.yml
 #OS Stuff
 .DS_Store
 
+#NuitkaFiles
+datalogger.build/
+datalogger.dist/
+*.bin
+
 # Distribution / packaging
 .Python
 build/
