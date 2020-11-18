@@ -35,16 +35,16 @@ import json
 from os import path
 from datetime import datetime
 
-import drivers.raspberry as rb
+
 
 DEVICE_RETRY_COUNT = 3
 
 # Change working dir to the same dir as this file
 os.chdir(sys.path[0])
 
-def main(device_yaml):
+def main(device_yaml, enable_pi_analytics):
     # Get device information from yaml file
-    #data_path = "/home/pi/solarian-datalogger/data/"
+    #data_path = "/home/pi/solarian-datalogger-test/data/"
     data_path = os.getcwd()+"/data/"
     devices = read_device_map(device_yaml)
     config_filename = os.path.splitext(os.path.basename(device_yaml))[0]
@@ -67,11 +67,14 @@ def main(device_yaml):
                 x += 1
     
     # Get raspberry internals and also append to the datapack
-    data_package.append(rb.get_raspberry_internals())
+    if(enable_pi_analytics):
+        import drivers.raspberry as rb
+        data_package.append(rb.get_raspberry_internals())
+        log.debug('Raspberry internals have been acquired')
 
     #print(json.dumps(data_package, indent=1))
     file_name = data_path+"solarian_"+ \
-                rb.get_device_serial()+"_"+ \
+                get_device_serial()+"_"+ \
                 config_filename+"_"+ \
                 get_timestamp()+ \
                 ".json.gz"
@@ -97,6 +100,20 @@ def read_device_map(device_yaml):
     #Return the device list
     return device_map
 
+def get_device_serial():
+    # Extract serial from cpuinfo file
+    cpuserial = "00000000"
+    try:
+      f = open('/proc/cpuinfo','r')
+      for line in f:
+        if line[0:6]=='Serial':
+          cpuserial = line[18:26]
+      f.close()
+    except:
+      cpuserial = "ERROR0000"
+
+    return cpuserial
+
 def get_timestamp():
     return datetime.today().strftime("%Y%m%d%H%M")
 
@@ -107,6 +124,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', default='config.yml', help='YAML file containing device settings. Default "config.yml"')
     parser.add_argument('--log', default='WARNING', help='Log levels, DEBUG, INFO, WARNING, ERROR or CRITICAL')
+    parser.add_argument('--enable-pi-analytics', action='store_true', dest='log_raspberry', help='Enable or disable RaspberryPi device data acquisition')
 
     args = parser.parse_args()
 
@@ -126,7 +144,7 @@ if __name__ == '__main__':
 
     #Run the main code
     try:
-        main(device_yaml=args.config)
+        main(device_yaml=args.config, enable_pi_analytics=args.log_raspberry)
     except Exception as e:
         log.error("Exception (Main Thread): "+str(e))
 
