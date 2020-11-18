@@ -42,12 +42,12 @@ DEVICE_RETRY_COUNT = 3
 # Change working dir to the same dir as this file
 os.chdir(sys.path[0])
 
-def main(device_yaml, enable_pi_analytics):
+def main(args):
     # Get device information from yaml file
     #data_path = "/home/pi/solarian-datalogger-test/data/"
     data_path = os.getcwd()+"/data/"
-    devices = read_device_map(device_yaml)
-    config_filename = os.path.splitext(os.path.basename(device_yaml))[0]
+    devices = read_device_map(args.config)
+    config_filename = os.path.splitext(os.path.basename(args.config))[0]
     data_package = []
 
     # Get the data from devices in devices yaml file and append to a file
@@ -68,7 +68,7 @@ def main(device_yaml, enable_pi_analytics):
                 x += 1
     
     # Get raspberry internals and also append to the datapack
-    if(enable_pi_analytics):
+    if(args.log_raspberry):
         import drivers.raspberry as rb
         data_package.append(rb.get_raspberry_internals())
         log.debug('Raspberry internals have been acquired')
@@ -80,9 +80,13 @@ def main(device_yaml, enable_pi_analytics):
                 get_timestamp()+ \
                 ".json.gz"
 
-    with gzip.open(file_name, 'wt', encoding="utf-8") as file_to_write:
-        json.dump(data_package, file_to_write)
-        log.debug('JSON file write successful')
+    if args.verbose:
+        print(json.dumps(data_package, indent=4))
+    
+    if not args.write_disabled:
+        with gzip.open(file_name, 'wt', encoding="utf-8") as file_to_write:
+            json.dump(data_package, file_to_write)
+            log.debug('JSON file write successful')
 
 
 def read_device_map(device_yaml):
@@ -125,7 +129,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', default='config.yml', help='YAML file containing device settings. Default "config.yml"')
     parser.add_argument('--log', default='WARNING', help='Log levels, DEBUG, INFO, WARNING, ERROR or CRITICAL')
-    parser.add_argument('--enable-pi-analytics', action='store_true', dest='log_raspberry', help='Enable or disable RaspberryPi device data acquisition')
+    parser.add_argument('--pi-analytics', action='store_true', dest='log_raspberry', help='Enable or disable RaspberryPi device data acquisition')
+    parser.add_argument('--verbose', action='store_true', help='Print the acquired data to console')
+    parser.add_argument('--disable-write', action='store_true', dest='write_disabled', help='Print the acquired data to console')
 
     args = parser.parse_args()
 
@@ -145,7 +151,7 @@ if __name__ == '__main__':
 
     #Run the main code
     try:
-        main(device_yaml=args.config, enable_pi_analytics=args.log_raspberry)
+        main(args=args)
     except Exception as e:
         log.error("Exception (Main Thread): "+str(e))
 
