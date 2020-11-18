@@ -59,7 +59,8 @@ def main(device_yaml, enable_pi_analytics):
                 device_driver = importlib.import_module('drivers.'+device['driver'])
                 log.debug('Driver Loaded: %s (%s:%s)',device_driver.get_version(),device['ip_address'],device['port'])
                 data = device_driver.get_data(device['ip_address'],device['port'],device['slave_id'],device['name'])
-                data_package.append(data)
+                if data != False:
+                    data_package.append(data)
                 x = DEVICE_RETRY_COUNT
 
             except Exception as e:

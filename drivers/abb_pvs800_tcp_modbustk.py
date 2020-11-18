@@ -39,7 +39,7 @@ log = logging.getLogger('solarian-datalogger')
 DRIVER_NAME = 'ABB_PVS800_TCP'
 DRIVER_VERSION = '0.2'
 MODBUS_TIMEOUT = 3
-TRY_AMOUNT = 10
+TRY_AMOUNT = 3
 
 module_name = os.path.splitext(os.path.basename(__file__))[0]
 
@@ -180,7 +180,7 @@ def get_data(ip_address, port, slave_id, device_name):
     masterTCP.set_verbose(True)
 
     #Set logging
-    log.debug('Module: %s - Driver: %s - Reading device %s:%s', module_name, DRIVER_NAME, ip_address,port)
+    log.debug('Module: %s - Driver: %s - Reading device %s:%s', DRIVER_NAME, device_name, ip_address,port)
 
     #Create an ordered list to store the values
     values = OrderedDict()
@@ -194,44 +194,57 @@ def get_data(ip_address, port, slave_id, device_name):
     while x < TRY_AMOUNT:
         try:
             read1 = masterTCP.execute(slave_id, cst.READ_HOLDING_REGISTERS, 42496, 7)
-            log.debug('Module: %s - Read 1 Successful : %s - %s:%s - TRIES:%s', module_name, DRIVER_NAME, ip_address, port, x)
+            log.debug('Module: %s - Read 1 Successful : %s - %s:%s - TRIES:%s', DRIVER_NAME, device_name, ip_address, port, x)
             x = TRY_AMOUNT
         except Exception as e:
-            log.error('Module: %s - Read 1 Error : %s - %s:%s - TRIES:%s', module_name, DRIVER_NAME, ip_address, port, x)
+            log.error('Module: %s - Read 1 Error : %s - %s:%s - TRIES:%s', DRIVER_NAME, device_name, ip_address, port, x)
             x += 1
             time.sleep(0.5)
     
+    if not "read1" in locals():
+        log.error('Modbus Scan Failed (Read1) : %.4f (DRIVER: %s - DEVICE: %s - UNIT: %s:%s)',(time.time() - start_time),DRIVER_NAME, device_name, ip_address, port)  
+        return False
+
     #Read second part
     x = 0
     while x < TRY_AMOUNT:
         try:
             read2 = masterTCP.execute(slave_id, cst.READ_HOLDING_REGISTERS, 42545, 27)
-            log.debug('Module: %s - Read 2 Successful : %s - %s:%s - TRIES:%s', module_name, DRIVER_NAME, ip_address, port, x)
+            log.debug('Module: %s - Read 2 Successful : %s - %s:%s - TRIES:%s', DRIVER_NAME, device_name, ip_address, port, x)
             x = TRY_AMOUNT
         except Exception as e:
-            log.error('Module: %s - Read 2 Error : %s - %s:%s - TRIES:%s', module_name, DRIVER_NAME, ip_address, port, x)
+            log.error('Module: %s - Read 2 Error : %s - %s:%s - TRIES:%s', DRIVER_NAME, device_name, ip_address, port, x)
             x += 1
             time.sleep(0.5)
-    
+
+    if not "read2" in locals():
+        log.error('Modbus Scan Failed (Read2) : %.4f (DRIVER: %s - DEVICE: %s - UNIT: %s:%s)',(time.time() - start_time),DRIVER_NAME, device_name, ip_address, port)  
+        return False
+
     #Read third part
     x = 0
     while x < TRY_AMOUNT:
         try:
             read3 = masterTCP.execute(slave_id, cst.READ_HOLDING_REGISTERS, 42599, 8)
-            log.debug('Module: %s - Read 3 Successful : %s - %s:%s - TRIES:%s', module_name, DRIVER_NAME, ip_address, port, x)
+            log.debug('Module: %s - Read 3 Successful : %s - %s:%s - TRIES:%s', DRIVER_NAME, device_name, ip_address, port, x)
             x = TRY_AMOUNT
         except Exception as e:
-            log.error('Module: %s - Read 3 Error : %s - %s:%s - TRIES:%s', module_name, DRIVER_NAME, ip_address, port, x)
+            log.error('Module: %s - Read 3 Error : %s - %s:%s - TRIES:%s', DRIVER_NAME, device_name, ip_address, port, x)
             x += 1
             time.sleep(0.5)
-    
+
+    if not "read3" in locals():
+        log.error('Modbus Scan Failed (Read3) : %.4f (DRIVER: %s - DEVICE: %s - UNIT: %s:%s)',(time.time() - start_time),DRIVER_NAME, device_name, ip_address, port)  
+        return False
+
+
     #Parse the data for read 1
     values['Active_Power']              = float(signed(read1[2]))
     values['Reactive_Power']            = float(signed(read1[3]))
     values['Grid_Voltage']              = float(read1[4]) / 10
     values['Grid_Frequency']            = float(read1[5]) / 100
     values['PowerFactor']               = float(signed(read1[6])) / 1000
-
+ 
     #Parse the data for read 2
     values['L1_Voltage']                = float(read2[1])  / 10
     values['L2_Voltage']                = float(read2[2])  / 10
@@ -252,7 +265,7 @@ def get_data(ip_address, port, slave_id, device_name):
     values['Total_kWh']                 = float(read2[22]) / 1
     values['Daily_kVAh']                = float(read2[24]) / 10
     values['Total_kVAh']                = float(read2[26]) / 1
-
+    
     #Extract Status-Limiting-Grid-Env-Fan Words
     main_status_word                    = int(read1[1])
     limiting_status_word                = int(read3[1])
