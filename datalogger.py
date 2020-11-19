@@ -92,7 +92,7 @@ def read_device_map(device_yaml):
 
     #Print the device list to logs
     for device in sorted(device_map, key=lambda x:sorted(x.keys())):
-        log.debug('{} <--> {} <--> {} <--> {}'.format( device['name'], device['driver'], device['ip_address'], device['port']))
+        log.debug('{} <--> {} <--> {} <--> {} <--> {}'.format( device['name'], device['driver'], device['ip_address'], device['port'], device['slave_id']))
     
     #Return the device list
     return device_map
