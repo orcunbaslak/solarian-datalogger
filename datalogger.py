@@ -36,12 +36,6 @@ from os import path
 from datetime import datetime
 
 
-
-DEVICE_RETRY_COUNT = 3
-
-# Change working dir to the same dir as this file
-cwd = os.getcwd()
-
 def main(args):
     # Get device information from yaml file
     #data_path = "/home/pi/solarian-datalogger-test/data/"
@@ -54,20 +48,16 @@ def main(args):
     # Get the data from devices in devices yaml file and append to a file
     for device in devices:
         if device['enabled']:
-            x = 1
-            while x < DEVICE_RETRY_COUNT:
-                try:
-                    #Import the device driver
-                    device_driver = importlib.import_module('drivers.'+device['driver'])
-                    log.debug('Driver Loaded: %s (%s:%s)',device_driver.get_version(),device['ip_address'],device['port'])
-                    data = device_driver.get_data(device['ip_address'],device['port'],device['slave_id'],device['name'])
-                    if data != False:
-                        data_package.append(data)
-                    x = DEVICE_RETRY_COUNT
+            try:
+                #Import the device driver
+                device_driver = importlib.import_module('drivers.'+device['driver'])
+                log.debug('Driver Loaded: %s (%s:%s)',device_driver.get_version(),device['ip_address'],device['port'])
+                data = device_driver.get_data(device['ip_address'],device['port'],device['slave_id'],device['name'])
+                if data != False:
+                    data_package.append(data)
 
-                except Exception as e:
-                    log.error("Exception while reading device:"+str(e))
-                    x += 1
+            except Exception as e:
+                log.error("Exception while reading device:"+str(e))
     
     # Get raspberry internals and also append to the datapack
     if(args.log_raspberry):
@@ -136,6 +126,9 @@ if __name__ == '__main__':
     parser.add_argument('--write-disabled', action='store_true', dest='write_disabled', help='Disabled file writing. Dry-run.')
 
     args = parser.parse_args()
+
+    # Get current working directory
+    cwd = os.getcwd()
 
     # Setup loggingg
     log = logging.getLogger('solarian-datalogger')
