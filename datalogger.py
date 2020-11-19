@@ -35,8 +35,6 @@ import json
 from os import path
 from datetime import datetime
 
-# Change working directory to files current directory to avoid cron path issues
-os.chdir(sys.path[0])
 
 def main(args):
     # Get device information from yaml file
@@ -129,8 +127,9 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    # Get current working directory
-    cwd = os.getcwd()
+    # Get current working directory (Fixes cron related issues)
+    cwd = os.path.dirname(os.path.abspath(__file__))
+    os.chdir(cwd)
 
     # Setup loggingg
     log = logging.getLogger('solarian-datalogger')
