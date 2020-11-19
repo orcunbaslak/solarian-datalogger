@@ -88,7 +88,7 @@ def get_data(ip_address, port, slave_id, device_name):
         except Exception as e:
             log.error('Module: %s - Read 1 Error : %s - %s:%s - TRIES:%s', DRIVER_NAME, device_name, ip_address, port, x)
             x += 1
-            time.sleep(0.5)
+            time.sleep(3)
     
     if not "read1" in locals():
         log.error('Modbus Scan Failed (Read1) : %.4f (DRIVER: %s - DEVICE: %s - UNIT: %s:%s)',(time.time() - start_time),DRIVER_NAME, device_name, ip_address, port)  
