@@ -35,6 +35,8 @@ import json
 from os import path
 from datetime import datetime
 
+# Change working directory to files current directory to avoid cron path issues
+os.chdir(sys.path[0])
 
 def main(args):
     # Get device information from yaml file
