@@ -40,13 +40,14 @@ from datetime import datetime
 DEVICE_RETRY_COUNT = 3
 
 # Change working dir to the same dir as this file
-os.chdir(sys.path[0])
+cwd = os.getcwd()
 
 def main(args):
     # Get device information from yaml file
     #data_path = "/home/pi/solarian-datalogger-test/data/"
-    data_path = os.getcwd()+"/data/"
-    devices = read_device_map(args.config)
+    data_path = cwd+"/data/"
+    config_file  = cwd+"/config/"+args.config
+    devices = read_device_map(config_file)
     config_filename = os.path.splitext(os.path.basename(args.config))[0]
     data_package = []
 
@@ -140,7 +141,7 @@ if __name__ == '__main__':
     log = logging.getLogger('solarian-datalogger')
     loglevel = args.log.upper()
     log.setLevel(getattr(logging, loglevel))
-    log_filename = "log_"+os.path.splitext(os.path.basename(args.config))[0]+".log"
+    log_filename = cwd+"/logs/log_"+os.path.splitext(os.path.basename(args.config))[0]+".log"
     loghandle = logging.FileHandler(log_filename, 'a')
     formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
     loghandle.setFormatter(formatter)
