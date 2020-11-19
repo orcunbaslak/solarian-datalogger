@@ -52,20 +52,21 @@ def main(args):
 
     # Get the data from devices in devices yaml file and append to a file
     for device in devices:
-        x = 1
-        while x < DEVICE_RETRY_COUNT:
-            try:
-                #Import the device driver
-                device_driver = importlib.import_module('drivers.'+device['driver'])
-                log.debug('Driver Loaded: %s (%s:%s)',device_driver.get_version(),device['ip_address'],device['port'])
-                data = device_driver.get_data(device['ip_address'],device['port'],device['slave_id'],device['name'])
-                if data != False:
-                    data_package.append(data)
-                x = DEVICE_RETRY_COUNT
+        if device['enabled']:
+            x = 1
+            while x < DEVICE_RETRY_COUNT:
+                try:
+                    #Import the device driver
+                    device_driver = importlib.import_module('drivers.'+device['driver'])
+                    log.debug('Driver Loaded: %s (%s:%s)',device_driver.get_version(),device['ip_address'],device['port'])
+                    data = device_driver.get_data(device['ip_address'],device['port'],device['slave_id'],device['name'])
+                    if data != False:
+                        data_package.append(data)
+                    x = DEVICE_RETRY_COUNT
 
-            except Exception as e:
-                log.error("Exception while reading device:"+str(e))
-                x += 1
+                except Exception as e:
+                    log.error("Exception while reading device:"+str(e))
+                    x += 1
     
     # Get raspberry internals and also append to the datapack
     if(args.log_raspberry):
@@ -73,7 +74,7 @@ def main(args):
         data_package.append(rb.get_raspberry_internals())
         log.debug('Raspberry internals have been acquired')
 
-    #print(json.dumps(data_package, indent=1))
+    # Construct the filename
     file_name = data_path+"solarian_"+ \
                 get_device_serial()+"_"+ \
                 config_filename+"_"+ \
@@ -131,7 +132,7 @@ if __name__ == '__main__':
     parser.add_argument('--log', default='WARNING', help='Log levels, DEBUG, INFO, WARNING, ERROR or CRITICAL')
     parser.add_argument('--pi-analytics', action='store_true', dest='log_raspberry', help='Enable or disable RaspberryPi device data acquisition')
     parser.add_argument('--verbose', action='store_true', help='Print the acquired data to console')
-    parser.add_argument('--disable-write', action='store_true', dest='write_disabled', help='Print the acquired data to console')
+    parser.add_argument('--write-disabled', action='store_true', dest='write_disabled', help='Disabled file writing. Dry-run.')
 
     args = parser.parse_args()
 
