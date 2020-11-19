@@ -96,6 +96,9 @@ def get_data(ip_address, port, slave_id, device_name):
     
     #Parse the data for read 1
     values['Irradiation'] = float(signed(read1[0])) / 1  
+    #Dont send a negative irradiation
+    if values['Irradiation'] < 0:
+        values['Irradiation'] = 0
         
     log.debug('Modbus Scan Completed in : %.4f (DRIVER: %s - DEVICE: %s - UNIT: %s:%s)',(time.time() - start_time),DRIVER_NAME, device_name, ip_address, port)    
     return values
