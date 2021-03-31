@@ -55,48 +55,48 @@ def get_data(ip_address, port, slave_id, device_name):
     Modbus Addresses of the device are as follows:
 
     == READ 1 ==
-    42496	Heartbeat                   0       	
-    42497	Inverter main status word   1            bf16 		
-    42498	Active power                2            int16      1       kW
-    42499	Reactive power              3            int16      1       kVAR
-    42500	Grid voltage                4            uint16     0.1     V
-    42501	Grid frequency              5            uint16     0.01    Hz
-    42502	Power factor                6            int16      0.001
+    42496	Heartbeat                               0       	
+    42497	Inverter main status word               1            bf16 		
+    42498	Active power                            2            int16      1       kW
+    42499	Reactive power                          3            int16      1       kVAR
+    42500	Grid voltage                            4            uint16     0.1     V
+    42501	Grid frequency                          5            uint16     0.01    Hz
+    42502	Power factor                            6            int16      0.001
     
     == READ 2 ==
-    42545	Code of the active fault    0               uint16 	1	
-    42546	Main voltage, U-V           1               uint16 	0.1	    V
-    42547	Main voltage, V-W           2               uint16 	0.1	    V
-    42548	Main voltage W-U            3               uint16 	0.1	    V
-    42549	Grid current                4               uint16 	0.1	    V
-    42550	DC input voltage            5               uint16 	0.1	    V
-    42551	DC bus voltage              6               uint16 	0.1	    V
-    42552	DC input current            7               uint16 	0.1	    A
-    42553	Grounding current3          8               uint16 	1	    mA
-    42554	Isolation resistance3       9               uint16 	1	    kOhm
-    42555	Ambient temperature         10              int16 	0.1	    °C
-    42556	Highest IGBT temperature, M1    11          int16 	0.1	    °C
-    42557	Highest IGBT temperature, M2   12           int16 	0.1	    °C
-    42558	Highest IGBT temperature, M3   13           int16 	0.1	    °C
-    42559	Highest IGBT temperature, M4   14           int16 	0.1	    °C
-    42560	Control section temperature      15         int16 	0.1	    °C
-    42561	Highest cabinet temperature, M1    16       int16 	0.1	    °C
-    42562	Highest cabinet temperature, M2   17        int16 	0.1	    °C
-    42563	Highest cabinet temperature, M3   18        int16 	0.1	    °C
-    42564	Highest cabinet temperature, M4   19        int16 	0.1	    °C
-    42565	LCL section temperature, M1      20         int16 	0.1	    °C
-    42566	LCL section temperature, M2    21           int16 	0.1	    °C
-    42567	LCL section temperature, M3   22            int16 	0.1	    °C
-    42568	LCL section temperature, M4   23            int16 	0.1	    °C
-    42569	Inverter section humidity   24              uint16 	0.1	    %
-    42570	Daily kWh supplied2, HIGH ORDER BIT 25	    uint16 	0.1	kWh
-    42571	Daily kWh supplied2, LOW ORDER BIT  26      uint16 	0.1	kWh -USE THIS-
-    42572	Total kWh supplied2, HIGH ORDER BIT 27      uint16 	1	kWh
-    42573	Total kWh supplied2, LOW ORDER BIT  28      uint16 	1	kWh -USE THIS-
-    42574	Daily kVAh supplied2, HIGH ORDER BIT 29     uint16 	0.1	kVAh
-    42575	Daily kVAh supplied2, LOW ORDER BIT 30      uint16 	0.1	kVAh -USE THIS-
-    42576	Total kVAh supplied2, HIGH ORDER BIT 31     uint16 	1	kVAh
-    42577	Total kVAh supplied2, LOW ORDER BIT 32     uint16	1	kVAh -USE THIS-
+    42545	Code of the active fault                0             uint16 	1	
+    42546	Main voltage, U-V                       1             uint16 	0.1	    V
+    42547	Main voltage, V-W                       2             uint16 	0.1	    V
+    42548	Main voltage W-U                        3             uint16 	0.1	    V
+    42549	Grid current                            4             uint16 	0.1	    V
+    42550	DC input voltage                        5             uint16 	0.1	    V
+    42551	DC bus voltage                          6             uint16 	0.1	    V
+    42552	DC input current                        7             uint16 	0.1	    A
+    42553	Grounding current3                      8             uint16 	1	    mA
+    42554	Isolation resistance3                   9             uint16 	1	    kOhm
+    42555	Ambient temperature                     10            int16 	0.1	    °C
+    42556	Highest IGBT temperature, M1            11            int16 	0.1	    °C
+    42557	Highest IGBT temperature, M2            12            int16 	0.1	    °C
+    42558	Highest IGBT temperature, M3            13            int16 	0.1	    °C
+    42559	Highest IGBT temperature, M4            14            int16 	0.1	    °C
+    42560	Control section temperature             15            int16 	0.1	    °C
+    42561	Highest cabinet temperature, M1         16            int16 	0.1	    °C
+    42562	Highest cabinet temperature, M2         17            int16 	0.1	    °C
+    42563	Highest cabinet temperature, M3         18            int16 	0.1	    °C
+    42564	Highest cabinet temperature, M4         19            int16 	0.1	    °C
+    42565	LCL section temperature, M1             20            int16 	0.1	    °C
+    42566	LCL section temperature, M2             21            int16 	0.1	    °C
+    42567	LCL section temperature, M3             22            int16 	0.1	    °C
+    42568	LCL section temperature, M4             23            int16 	0.1	    °C
+    42569	Inverter section humidity               24            uint16 	0.1	    %
+    42570	Daily kWh supplied2, HIGH ORDER BIT     25	          uint16 	0.1	    kWh
+    42571	Daily kWh supplied2, LOW ORDER BIT      26            uint16 	0.1	    kWh -USE THIS-
+    42572	Total kWh supplied2, HIGH ORDER BIT     27            uint16 	1	    kWh
+    42573	Total kWh supplied2, LOW ORDER BIT      28            uint16 	1	    kWh -USE THIS-
+    42574	Daily kVAh supplied2, HIGH ORDER BIT    29            uint16 	0.1	    kVAh
+    42575	Daily kVAh supplied2, LOW ORDER BIT     30            uint16 	0.1	    kVAh -USE THIS-
+    42576	Total kVAh supplied2, HIGH ORDER BIT    31            uint16 	1	    kVAh
+    42577	Total kVAh supplied2, LOW ORDER BIT     32            uint16	1	    kVAh -USE THIS-
 
     == READ 3 ==    
     42626   Electromechanical switching #1          0               bf16
@@ -212,7 +212,6 @@ def get_data(ip_address, port, slave_id, device_name):
     9       AC/DC cabinet indoor fans M2
     10      AC/DC cabinet indoor fans M3
     11      AC/DC cabinet indoor fans M4
-
 
     ========= ENVIRONMENTAL STATUS WORD (42635) (1:ACTIVE - 0:NOT) =========
     0       Reserved
