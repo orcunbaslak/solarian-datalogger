@@ -24,7 +24,7 @@
 
 import os
 import time
-import struct
+from struct import *
 from datetime import datetime
 from collections import OrderedDict
 
@@ -261,10 +261,10 @@ def get_data(ip_address, port, slave_id, device_name):
     values['Highest_IGBT_Temp_PU31']    = float(signed(read2[13])) / 10
     values['Highest_IGBT_Temp_PU41']    = float(signed(read2[14])) / 10
     values['Control_Section_Temp']      = float(signed(read2[15])) / 10
-    values['Daily_kWh']                 = float(read2[20]) / 10
-    values['Total_kWh']                 = float(read2[22]) / 1
-    values['Daily_kVAh']                = float(read2[24]) / 10
-    values['Total_kVAh']                = float(read2[26]) / 1
+    values['Daily_kWh']                 = convert_registers_to_long(19, 20, False, 3, read2) / 1
+    values['Total_kWh']                 = convert_registers_to_long(21, 22, False, 1, read2) * 10
+    values['Daily_kVAh']                = convert_registers_to_long(23, 24, False, 3, read2) / 1
+    values['Total_kVAh']                = convert_registers_to_long(25, 26, False, 1, read2) * 10
     
     #Extract Status-Limiting-Grid-Env-Fan Words
     main_status_word                    = int(read1[1])
