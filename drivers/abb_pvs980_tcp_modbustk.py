@@ -24,7 +24,7 @@
 
 import os
 import time
-import struct
+from struct import *
 from datetime import datetime
 from collections import OrderedDict
 
@@ -378,10 +378,10 @@ def get_data(ip_address, port, slave_id, device_name):
     values['Highest_LCL_Temp_M3']       = float(signed(read2[22])) / 10
     values['Highest_LCL_Temp_M4']       = float(signed(read2[23])) / 10
     values['Inverter_Section_Humidity'] = float(signed(read2[24])) / 10
-    values['Daily_kWh']                 = convert_registers_to_long(25, 26, False, 1, read2)  
-    values['Total_kWh']                 = convert_registers_to_long(27, 28, False, 1, read2)
-    values['Daily_kVAh']                = convert_registers_to_long(29, 30, False, 1, read2)
-    values['Total_kVAh']                = convert_registers_to_long(31, 32, False, 1, read2)
+    values['Daily_kWh']                 = convert_registers_to_long(25, 26, False, 3, read2)  
+    values['Total_kWh']                 = convert_registers_to_long(27, 28, False, 1, read2) * 10
+    values['Daily_kVAh']                = convert_registers_to_long(29, 30, False, 3, read2)
+    values['Total_kVAh']                = convert_registers_to_long(31, 32, False, 1, read2) * 10
     
     #Extract Status Words
     electromechanical_word              = int(read3[0])
