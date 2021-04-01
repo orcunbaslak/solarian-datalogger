@@ -24,7 +24,8 @@
 
 import os
 import time
-from struct import *
+import struct
+from struct import pack, unpack
 from datetime import datetime
 from collections import OrderedDict
 
