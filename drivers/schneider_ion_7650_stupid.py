@@ -149,11 +149,8 @@ def get_data(ip_address, port, slave_id, device_name):
     x = 0
     while x < TRY_AMOUNT:
         try:
-            read1 = masterTCP.execute(slave_id, cst.READ_HOLDING_REGISTERS, 40150, 94)
+            read1 = masterTCP.execute(slave_id, cst.READ_HOLDING_REGISTERS, 40150, 20)
             log.debug('Module: %s - Read 1 Successful : %s - %s:%s - TRIES:%s', DRIVER_NAME, device_name, ip_address, port, x)
-            if(convert_registers_to_long(16, 17, False, 0, read1) == 0):
-                log.error('Voltage is zero!!')
-                raise Exception('Voltage is zero. Try Again')
             x = TRY_AMOUNT
         except Exception as e:
             log.error('Module: %s - Read 1 Error : %s - %s:%s - TRIES:%s', DRIVER_NAME, device_name, ip_address, port, x)
@@ -164,77 +161,10 @@ def get_data(ip_address, port, slave_id, device_name):
         log.error('Modbus Scan Failed (Read1) : %.4f (DRIVER: %s - DEVICE: %s - UNIT: %s:%s)',(time.time() - start_time),DRIVER_NAME, device_name, ip_address, port)  
         return False
 
-
-    #UINT16
-    values['Ia']            = float(read1[0])  * 10
-    values['Ib']            = float(read1[1])  * 10
-    values['Ic']            = float(read1[2])  * 10
-    values['I4']            = float(read1[3])  * 10
-    values['I5']            = float(read1[4])  * 10
-    values['I_Avg']         = float(read1[5])  * 10
-    values['I_Avg_min']     = float(read1[6])  * 10
-    values['I_Avg_max']     = float(read1[7])  * 10
-    values['I_Avg_mean']    = float(read1[8])  * 10
-    values['Freq']          = float(read1[9])  * 10
-    values['Freq_min']      = float(read1[10]) * 10
-    values['Freq_max']      = float(read1[11]) * 10
-    values['Freq_mean']     = float(read1[12]) * 10
-    values['V_unbal']       = float(read1[13]) * 10
-    values['I_unbal']       = float(read1[14]) * 10
-    values['Phase_Rev']     = float(read1[15]) * 10
-    #UINT32 - SCALING NOT ENABLED
-    values['Vln_a']         = convert_registers_to_long(16, 17, False, 0, read1) 
-    values['Vln_b']         = convert_registers_to_long(18, 19, False, 0, read1) 
-    values['Vln_c']         = convert_registers_to_long(20, 21, False, 0, read1)
-    values['Vln_avg']       = convert_registers_to_long(22, 23, False, 0, read1) 
-    values['Vln_avg_max']   = convert_registers_to_long(24, 25, False, 0, read1) 
-    values['Vll_ab']        = convert_registers_to_long(26, 27, False, 0, read1) 
-    values['Vll_ac']        = convert_registers_to_long(28, 29, False, 0, read1) 
-    values['Vll_ca']        = convert_registers_to_long(30, 31, False, 0, read1) 
-    values['Vll_avg']       = convert_registers_to_long(32, 33, False, 0, read1) 
-    values['Vll_avg_max']   = convert_registers_to_long(34, 35, False, 0, read1)
-    values['Vll_avg_min']   = convert_registers_to_long(36, 37, False, 0, read1) 
-    #INT32 - SCALING NOT ENABLED
-    values['kW_a']          = convert_registers_to_long(38, 39, True, 0, read1) 
-    values['kW_b']          = convert_registers_to_long(40, 41, True, 0, read1) 
-    values['kW_c']          = convert_registers_to_long(42, 43, True, 0, read1) 
-    values['kW_tot']        = convert_registers_to_long(44, 45, True, 0, read1) 
-    values['kW_tot_max']    = convert_registers_to_long(46, 47, True, 0, read1) 
-    values['kVAR_a']        = convert_registers_to_long(48, 49, True, 0, read1)  
-    values['kVAR_b']        = convert_registers_to_long(50, 51, True, 0, read1) 
-    values['kVAR_c']        = convert_registers_to_long(52, 53, True, 0, read1) 
-    values['kVAR_tot']      = convert_registers_to_long(54, 55, True, 0, read1) 
-    values['kVAR_tot_max']  = convert_registers_to_long(56, 57, True, 0, read1) 
-    values['kVA_a']         = convert_registers_to_long(58, 59, True, 0, read1) 
-    values['kVA_b']         = convert_registers_to_long(60, 61, True, 0, read1) 
-    values['kVA_c']         = convert_registers_to_long(62, 63, True, 0, read1) 
-    values['kVA_tot']       = convert_registers_to_long(64, 65, True, 0, read1) 
-    values['kVA_tot_max']   = convert_registers_to_long(66, 67, True, 0, read1)
-    values['kWh_del']       = convert_registers_to_long(68, 69, True, 0, read1) 
-    values['kWh_rec']       = convert_registers_to_long(70, 71, True, 0, read1) 
-    values['kVARh_del']     = convert_registers_to_long(72, 73, True, 0, read1)
-    values['kVARh_rec']     = convert_registers_to_long(74, 75, True, 0, read1) 
-    values['kVAh_drec']     = convert_registers_to_long(76, 77, True, 0, read1)
-    #INT16
-    values['PF_sign_a']     = float(signed(read1[78])) * 100
-    values['PF_sign_b']     = float(signed(read1[79])) * 100
-    values['PF_sign_c']     = float(signed(read1[80])) * 100
-    values['PF_sign_tot']   = float(signed(read1[81])) * 100
-    values['V1_THD_max']    = float(signed(read1[82])) * 100
-    values['V2_THD_max']    = float(signed(read1[83])) * 100
-    values['V3_THD_max']    = float(signed(read1[84])) * 100
-    values['I1_THD_max']    = float(signed(read1[85])) * 100
-    values['I2_THD_max']    = float(signed(read1[86])) * 100
-    values['I3_THD_max']    = float(signed(read1[87])) * 100
-    values['I1_K_Fact']     = float(signed(read1[88])) * 100
-    values['I2_K_Fact']     = float(signed(read1[89])) * 100
-    values['I3_K_Fact']     = float(signed(read1[90])) * 100
-    values['I1_Crest_Fact'] = float(signed(read1[91])) * 100
-    values['I2_Crest_Fact'] = float(signed(read1[92])) * 100
-    values['I3_Crest_Fact'] = float(signed(read1[93])) * 100
-
-    
-    log.warn('Vln_a is %.4f',values['Vln_a'])
+    #JUST THE VOLTAGES 
+    values['Vll_ab']        = convert_registers_to_long(12, 13, False, 0, read1) 
+    values['Vll_ac']        = convert_registers_to_long(14, 15, False, 0, read1) 
+    values['Vll_ca']        = convert_registers_to_long(16, 17, False, 0, read1) 
     
     log.debug('Modbus Scan Completed in : %.4f (DRIVER: %s - UNIT: %s:%s)',(time.time() - start_time),DRIVER_NAME, ip_address, port)    
     return values
