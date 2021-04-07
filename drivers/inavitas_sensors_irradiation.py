@@ -44,7 +44,7 @@ TRY_AMOUNT = 3
 
 module_name = os.path.splitext(os.path.basename(__file__))[0]
 
-def get_data(ip_address, port, slave_id, device_name):
+def get_data(ip_address, port, slave_id, device_name, measurement_suffix):
     """Instrument function for pyranometers from Inavitas system.
 
     Args:
@@ -77,6 +77,7 @@ def get_data(ip_address, port, slave_id, device_name):
 
     #Append devicename and timestamp for InfluxDB
     values['Device_Name'] = device_name
+    values['Measurement_Suffix'] = measurement_suffix
     values['Date'] = get_timestamp_for_influxdb()
     
     # Read first part

@@ -2,7 +2,7 @@ devices:
     - name : INVERTER_1
       driver: abb_pvs800_tcp_modbustk
       enabled : yes #yes/no to enable/disable the device
-      measurement: SPP_1  # InfluxDB Measurement (Table) Name
+      measurement: SPP_1  # InfluxDB Measurement (Table) Name Suffix
       slave_id : 1     # this is the slave address number
       ip_address : 192.168.1.2   # IPv4 destination address
       port : 502  # destination port

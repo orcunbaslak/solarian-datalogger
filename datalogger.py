@@ -52,7 +52,7 @@ def main(args):
                 #Import the device driver
                 device_driver = importlib.import_module('drivers.'+device['driver'])
                 log.debug('Driver Loaded: %s (%s:%s)',device_driver.get_version(),device['ip_address'],device['port'])
-                data = device_driver.get_data(device['ip_address'],device['port'],device['slave_id'],device['name'])
+                data = device_driver.get_data(device['ip_address'],device['port'],device['slave_id'],device['name'],device['measurement'])
                 if data != False:
                     data_package.append(data)
 
