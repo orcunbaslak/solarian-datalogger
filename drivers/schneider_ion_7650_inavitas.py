@@ -37,7 +37,7 @@ import logging
 log = logging.getLogger('solarian-datalogger')
 
 
-DRIVER_NAME = 'SCHNEIDER_ION_7650_TCP'
+DRIVER_NAME = 'SCHNEIDER_ION_7650_TCP_INAVITAS'
 DRIVER_VERSION = '0.1'
 MODBUS_TIMEOUT = 3
 TRY_AMOUNT = 3
@@ -56,74 +56,40 @@ def get_data(ip_address, port, slave_id, device_name, measurement_suffix):
     Modbus Addresses of the device are as follows:
 
     == READ 1 ==
-    Address 	Array       Address	Label 	R	Format 	Scaling 
-    40150	0	Ia 	        Amp/freq/unbal 	1	UINT16 	10
-    40151	1	Ib 	        Amp/freq/unbal 	1	UINT16 	10
-    40152	2	Ic 	        Amp/freq/unbal 	1	UINT16 	10
-    40153	3	I4 	        Amp/freq/unbal 	1	UINT16 	10
-    40154	4	I5 	        Amp/freq/unbal 	1	UINT16 	10
-    40155	5	I avg 	    Amp/freq/unbal 	1	UINT16 	10
-    40156	6	I avg mn 	Amp/freq/unbal 	1	UINT16 	10
-    40157	7	I avg mx 	Amp/freq/unbal 	1	UINT16 	10
-    40158	8	I avg mean 	Amp/freq/unbal 	1	UINT16 	10
-    40159	9	Freq 	    Amp/freq/unbal 	1	UINT16 	10
-    40160	10	Freq mn 	Amp/freq/unbal 	1	UINT16 	10
-    40161	11	Freq mx 	Amp/freq/unbal 	1	UINT16 	10
-    40162	12	Freq mean 	Amp/freq/unbal 	1	UINT16 	10
-    40163	13	V unbal 	Amp/freq/unbal 	1	UINT16 	10
-    40164	14	I unbal 	Amp/freq/unbal 	1	UINT16 	10
-    40165	15	Phase Rev 	Amp/freq/unbal 	1	UINT16 	10
+    Address 	Array Address	    Label 	    Type            R	Format 	Scaling 
+    1	        0  	                Vln a 	    Volts 	        1	UINT16 	1
+    2	        1	                Vln b 	    Volts 	        1	UINT16 	1
+    3	        2	                Vln c 	    Volts 	        1	UINT16 	1
 
-    40166	16	Vln a 	    Volts 	        2	UINT32 	10
-    40168	18	Vln b 	    Volts 	        2	UINT32 	10
-    40170	20	Vln c 	    Volts 	        2	UINT32 	10
-    40172	22	Vln avg 	Volts 	        2	UINT32 	10
-    40174	24	Vln avg mx 	Volts 	        2	UINT32 	10
-    40178	26	Vll ab 	    Volts 	        2	UINT32 	10
-    40180	28	Vll bc 	    Volts 	        2	UINT32 	10
-    40182	30	Vll ca 	    Volts 	        2	UINT32 	10
-    40184	32	Vll avg 	Volts 	        2	UINT32 	10
-    40186	34	Vll avg mx 	Volts 	        2	UINT32 	10
-    40188	36	Vll avg mn 	Volts 	        2	UINT32 	10
+    4	        3	                Vll ab 	    Volts 	        1	UINT16 	1
+    5	        4	                Vll bc 	    Volts 	        1	UINT16 	1
+    6	        5	                Vll ca 	    Volts 	        1	UINT16 	1
 
-    40198	38	kW a 	    kW/kVAr/kVA 	2	INT32 	1/1000 
-    40200	40	kW b 	    kW/kVAr/kVA 	2	INT32 	1/1000 
-    40202	42	kW c 	    kW/kVAr/kVA 	2	INT32 	1/1000 
-    40204	44	kW tot 	    kW/kVAr/kVA 	2	INT32 	1/1000 
-    40206	46	kW tot mx 	kW/kVAr/kVA 	2	INT32 	1/1000 
-    40208	48	kVAR a 	    kW/kVAr/kVA 	2	INT32 	1/1000 
-    40210	50	kVAR b 	    kW/kVAr/kVA 	2	INT32 	1/1000 
-    40212	52	kVAR c 	    kW/kVAr/kVA 	2	INT32 	1/1000 
-    40214	54	kVAR tot 	kW/kVAr/kVA 	2	INT32 	1/1000 
-    40216	56	kVAR tot mx kW/kVAr/kVA 	2	INT32 	1/1000 
-    40218	58	kVA a 	    kW/kVAr/kVA 	2	INT32 	1/1000 
-    40220	60	kVA b 	    kW/kVAr/kVA 	2	INT32 	1/1000 
-    40222	62	kVA c 	    kW/kVAr/kVA 	2	INT32 	1/1000 
-    40224	64	kVA tot 	kW/kVAr/kVA 	2	INT32 	1/1000 
-    40226	66	kVA tot mx 	kW/kVAr/kVA 	2	INT32 	1/1000 
-    40230	68	kWh del 	kWh/kVArh 	    2	INT32 	1/1000 
-    40232	70	kWh rec 	kWh/kVArh 	    2	INT32 	1/1000 
-    40234	72	kVARh del 	kWh/kVArh 	    2	INT32 	1/1000 
-    40236	74	kVARh rec 	kWh/kVArh 	    2	INT32 	1/1000 
-    40238	76	kVAh d+rec 	kWh/kVArh 	    2	INT32 	1/1000 
+    21	        20	                I1 THD mx 	PF/THD/Kfactor 	1	UINT16 	100
+    22	        21	                I2 THD mx 	PF/THD/Kfactor 	1	UINT16 	100
+    23	        22	                I3 THD mx 	PF/THD/Kfactor 	1	UINT16 	100
+    24	        23	                V1 THD mx 	PF/THD/Kfactor 	1	UINT16 	100
+    25	        24	                V2 THD mx 	PF/THD/Kfactor 	1	UINT16 	100
+    26	        25	                V3 THD mx 	PF/THD/Kfactor 	1	UINT16 	100
 
-    40262	78	PF sign a 	PF/THD/Kfactor 	1	INT16 	100
-    40263	79	PF sign b 	PF/THD/Kfactor 	1	INT16 	100
-    40264	80	PF sign c 	PF/THD/Kfactor 	1	INT16 	100
-    40265	81	PF sign tot PF/THD/Kfactor 	1	INT16 	100
-    40266	82	V1 THD mx 	PF/THD/Kfactor 	1	INT16 	100
-    40267	83	V2 THD mx 	PF/THD/Kfactor 	1	INT16 	100
-    40268	84	V3 THD mx 	PF/THD/Kfactor 	1	INT16 	100
-    40269	85	I1 THD mx 	PF/THD/Kfactor 	1	INT16 	100
-    40270	86	I2 THD mx 	PF/THD/Kfactor 	1	INT16 	100
-    40271	87	I3 THD mx 	PF/THD/Kfactor 	1	INT16 	100
-    40272	88	I1 K Fact 	PF/THD/Kfactor 	1	INT16 	100
-    40273	89	I2 K Fact 	PF/THD/Kfactor 	1	INT16 	100
-    40274	90	I3 K Fact 	PF/THD/Kfactor 	1	INT16 	100
-    40275	91	I1 Crest  	PF/THD/Kfactor 	1	INT16 	100
-    40276	92	I2 Crest  	PF/THD/Kfactor 	1	INT16 	100
-    40277	93	I3 Crest  	PF/THD/Kfactor 	1	INT16 	100
 
+    27	        26	                Freq 	    Amp/freq/unbal 	1	UINT16 	10
+
+    30	        29	                Ia 	        Amp/freq/unbal 	1	UINT16 	10
+    31	        30	                Ib 	        Amp/freq/unbal 	1	UINT16 	10
+    32	        31	                Ic 	        Amp/freq/unbal 	1	UINT16 	10
+
+    43	        42	                PF lead 	PF/THD/Kfactor 	1	INT16 	100
+    44	        43	                PF lag 	    PF/THD/Kfactor 	1	INT16 	100
+
+    50	        49	                kW tot 	    kW/kVAr/kVA 	2	INT32 	1/1000 
+    52	        51	                kVAR tot 	kW/kVAr/kVA 	2	INT32 	1/1000 
+    54	        53	                kVA tot 	kW/kVAr/kVA 	2	INT32 	1/1000 
+
+    56	        55	                kWh del 	kWh/kVArh 	    2	INT32 	1/1000 
+    58	        57	                kWh rec 	kWh/kVArh 	    2	INT32 	1/1000 
+    60	        59	                kVARh del 	kWh/kVArh 	    2	INT32 	1/1000 
+    62	        61	                kVARh rec 	kWh/kVArh 	    2	INT32 	1/1000 
 
     """
 
@@ -150,8 +116,11 @@ def get_data(ip_address, port, slave_id, device_name, measurement_suffix):
     x = 0
     while x < TRY_AMOUNT:
         try:
-            read1 = masterTCP.execute(slave_id, cst.READ_HOLDING_REGISTERS, 40150, 60)
+            read1 = masterTCP.execute(slave_id, cst.READ_HOLDING_REGISTERS, 1, 64)
             log.debug('Module: %s - Read 1 Successful : %s - %s:%s - TRIES:%s', DRIVER_NAME, device_name, ip_address, port, x)
+            if(convert_registers_to_long(16, 17, False, 0, read1) == 0):
+                log.error('Voltage is zero!!')
+                raise Exception('Voltage is zero. Try Again')
             x = TRY_AMOUNT
         except Exception as e:
             log.error('Module: %s - Read 1 Error : %s - %s:%s - TRIES:%s', DRIVER_NAME, device_name, ip_address, port, x)
@@ -162,13 +131,43 @@ def get_data(ip_address, port, slave_id, device_name, measurement_suffix):
         log.error('Modbus Scan Failed (Read1) : %.4f (DRIVER: %s - DEVICE: %s - UNIT: %s:%s)',(time.time() - start_time),DRIVER_NAME, device_name, ip_address, port)  
         return False
 
-    #JUST THE VOLTAGES 
-    values['Vll_ab']        = convert_registers_to_long(12, 13, False, 0, read1) 
-    values['Vll_ac']        = convert_registers_to_long(14, 15, False, 0, read1) 
-    values['Vll_ca']        = convert_registers_to_long(16, 17, False, 0, read1)
-    values['Freq']          = float(read1[26])  / 100
-    values['kW_tot']        = float(signed(read1[50])) * 1
-    values['kVA_tot']       = float(signed(read1[54])) * 1 
+
+    #UINT16
+
+    values['Vln_a']         = float(read1[0]) 
+    values['Vln_b']         = float(read1[1])
+    values['Vln_c']         = float(read1[2])
+
+    values['Vll_ab']        = float(read1[3])
+    values['Vll_ac']        = float(read1[4]) 
+    values['Vll_ca']        = float(read1[5]) 
+
+    values['I1_THD_max']    = float(read1[20]) * 100
+    values['I2_THD_max']    = float(read1[21]) * 100
+    values['I3_THD_max']    = float(read1[22]) * 100
+    values['V1_THD_max']    = float(read1[23]) * 100
+    values['V2_THD_max']    = float(read1[24]) * 100
+    values['V3_THD_max']    = float(read1[25]) * 100
+
+    values['Freq']          = float(read1[26])  * 10
+
+    values['Ia']            = float(read1[29])  * 10
+    values['Ib']            = float(read1[30])  * 10
+    values['Ic']            = float(read1[31])  * 10
+
+    values['PF_lead']       = float(signed(read1[42])) * 100
+    values['PF_lag']        = float(signed(read1[43])) * 100
+
+    values['kW_tot']        = convert_registers_to_long(49, 50, True, 0, read1) 
+    values['kVAR_tot']      = convert_registers_to_long(51, 52, True, 0, read1) 
+    values['kVA_tot']       = convert_registers_to_long(53, 54, True, 0, read1) 
+
+    values['kWh_del']       = convert_registers_to_long(55, 56, True, 0, read1) 
+    values['kWh_rec']       = convert_registers_to_long(57, 58, True, 0, read1) 
+    values['kVARh_del']     = convert_registers_to_long(59, 60, True, 0, read1)
+    values['kVARh_rec']     = convert_registers_to_long(61, 62, True, 0, read1) 
+    
+    log.warn('Vln_a is %.4f',values['Vln_a'])
     
     log.debug('Modbus Scan Completed in : %.4f (DRIVER: %s - UNIT: %s:%s)',(time.time() - start_time),DRIVER_NAME, ip_address, port)    
     return values
