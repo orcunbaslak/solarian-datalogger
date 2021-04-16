@@ -116,7 +116,7 @@ def get_data(ip_address, port, slave_id, device_name, measurement_suffix):
     x = 0
     while x < TRY_AMOUNT:
         try:
-            read1 = masterTCP.execute(slave_id, cst.READ_HOLDING_REGISTERS, 1, 64)
+            read1 = masterTCP.execute(slave_id, cst.READ_HOLDING_REGISTERS, 149, 122)
             log.debug('Module: %s - Read 1 Successful : %s - %s:%s - TRIES:%s', DRIVER_NAME, device_name, ip_address, port, x)
             if(convert_registers_to_long(16, 17, False, 0, read1) == 0):
                 log.error('Voltage is zero!!')
@@ -133,41 +133,36 @@ def get_data(ip_address, port, slave_id, device_name, measurement_suffix):
 
 
     #UINT16
+    values['Ia']            = float(read1[0])  / 10
+    values['Ib']            = float(read1[1])  / 10
+    values['Ic']            = float(read1[2])  / 10
 
-    values['Vln_a']         = float(read1[0]) 
-    values['Vln_b']         = float(read1[1])
-    values['Vln_c']         = float(read1[2])
+    values['Freq']          = float(read1[9])  / 10
 
-    values['Vll_ab']        = float(read1[3])
-    values['Vll_ac']        = float(read1[4]) 
-    values['Vll_ca']        = float(read1[5]) 
+    values['Vll_ab']        = convert_registers_to_long(28, 29, False, 0, read1)
+    values['Vll_ac']        = convert_registers_to_long(30, 31, False, 0, read1) 
+    values['Vll_ca']        = convert_registers_to_long(32, 33, False, 0, read1) 
 
-    values['I1_THD_max']    = float(read1[20]) * 100
-    values['I2_THD_max']    = float(read1[21]) * 100
-    values['I3_THD_max']    = float(read1[22]) * 100
-    values['V1_THD_max']    = float(read1[23]) * 100
-    values['V2_THD_max']    = float(read1[24]) * 100
-    values['V3_THD_max']    = float(read1[25]) * 100
+    values['kW_tot']        = convert_registers_to_long(54, 55, True, 0, read1) 
+    values['kVAR_tot']      = convert_registers_to_long(64, 65, True, 0, read1) 
+    values['kVA_tot']       = convert_registers_to_long(74, 75, True, 0, read1) 
+    values['kWh_del']       = convert_registers_to_long(80, 81, True, 0, read1) 
+    values['kWh_rec']       = convert_registers_to_long(82, 83, True, 0, read1) 
+    values['kVARh_del']     = convert_registers_to_long(84, 85, True, 0, read1)
+    values['kVARh_rec']     = convert_registers_to_long(86, 87, True, 0, read1) 
 
-    values['Freq']          = float(read1[26])  * 10
+    values['I1_THD_max']    = float(signed(read1[119])) / 100
+    values['I2_THD_max']    = float(signed(read1[120])) / 100
+    values['I3_THD_max']    = float(signed(read1[121])) / 100
+    values['V1_THD_max']    = float(signed(read1[116])) / 100
+    values['V2_THD_max']    = float(signed(read1[117])) / 100
+    values['V3_THD_max']    = float(signed(read1[118])) / 100
 
-    values['Ia']            = float(read1[29])  * 10
-    values['Ib']            = float(read1[30])  * 10
-    values['Ic']            = float(read1[31])  * 10
+    values['PF_tot']        = float(signed(read1[115])) / 100
 
-    values['PF_lead']       = float(signed(read1[42])) * 100
-    values['PF_lag']        = float(signed(read1[43])) * 100
 
-    values['kW_tot']        = convert_registers_to_long(49, 50, True, 0, read1) 
-    values['kVAR_tot']      = convert_registers_to_long(51, 52, True, 0, read1) 
-    values['kVA_tot']       = convert_registers_to_long(53, 54, True, 0, read1) 
 
-    values['kWh_del']       = convert_registers_to_long(55, 56, True, 0, read1) 
-    values['kWh_rec']       = convert_registers_to_long(57, 58, True, 0, read1) 
-    values['kVARh_del']     = convert_registers_to_long(59, 60, True, 0, read1)
-    values['kVARh_rec']     = convert_registers_to_long(61, 62, True, 0, read1) 
-    
-    log.warn('Vln_a is %.4f',values['Vln_a'])
+
     
     log.debug('Modbus Scan Completed in : %.4f (DRIVER: %s - UNIT: %s:%s)',(time.time() - start_time),DRIVER_NAME, ip_address, port)    
     return values
