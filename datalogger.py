@@ -40,6 +40,7 @@ def main(args):
     # Get device information from yaml file
     #data_path = "/home/pi/solarian-datalogger-test/data/"
     data_path = cwd+"/data/"
+    temp_path = cwd+"/tmp/"
     config_file  = cwd+"/config/"+args.config
     devices = read_device_map(config_file)
     config_filename = os.path.splitext(os.path.basename(args.config))[0]
@@ -65,8 +66,15 @@ def main(args):
         data_package.append(rb.get_raspberry_internals())
         log.debug('Raspberry internals have been acquired')
 
-    # Construct the filename
+    # Construct the filepath for final file destination
     file_name = data_path+"solarian_"+ \
+                get_device_serial()+"_"+ \
+                config_filename+"_"+ \
+                get_timestamp()+ \
+                ".json.gz"
+    
+    # Construct the temporary path for atomic writes
+    temp_file_name = temp_path+"solarian_"+ \
                 get_device_serial()+"_"+ \
                 config_filename+"_"+ \
                 get_timestamp()+ \
@@ -75,10 +83,17 @@ def main(args):
     if args.verbose:
         print(json.dumps(data_package, indent=4))
     
+    #Write the GZipped JSON file to a temporary dir
     if not args.write_disabled:
-        with gzip.open(file_name, 'wt', encoding="utf-8") as file_to_write:
+        with gzip.open(temp_file_name, 'wt', encoding="utf-8") as file_to_write:
             json.dump(data_package, file_to_write)
             log.debug('JSON file write successful')
+
+    #Move temporary file to its final destination via rename. It's atomic under POSIX.
+    try:
+        os.rename(temp_file_name, file_name)
+    except Exception as e:
+        log.error('Error while atomic write:'+str(e))
 
 
 def read_device_map(device_yaml):
