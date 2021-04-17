@@ -88,12 +88,12 @@ def main(args):
         with gzip.open(temp_file_name, 'wt', encoding="utf-8") as file_to_write:
             json.dump(data_package, file_to_write)
             log.debug('JSON file write successful')
+        #Move temporary file to its final destination via rename. It's atomic under POSIX.
+        try:
+            os.rename(temp_file_name, file_name)
+        except Exception as e:
+            log.error('Error while atomic write:'+str(e))
 
-    #Move temporary file to its final destination via rename. It's atomic under POSIX.
-    try:
-        os.rename(temp_file_name, file_name)
-    except Exception as e:
-        log.error('Error while atomic write:'+str(e))
 
 
 def read_device_map(device_yaml):
