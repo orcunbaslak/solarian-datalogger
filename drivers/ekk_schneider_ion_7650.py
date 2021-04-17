@@ -4,7 +4,7 @@
  * 
  *    Solarian Datalogger - A datalogging software for solar systems using various drivers
  * 
- *    Copyright (C) 2020 Orçun Başlak
+ *    Copyright (C) 2021 Orçun Başlak
  *
  *    This program is free software: you can redistribute it and/or modify
  *    it under the terms of the GNU General Public License as published by
@@ -56,40 +56,37 @@ def get_data(ip_address, port, slave_id, device_name, measurement_suffix):
     Modbus Addresses of the device are as follows:
 
     == READ 1 ==
-    Address 	Array Address	    Label 	    Type            R	Format 	Scaling 
-    1	        0  	                Vln a 	    Volts 	        1	UINT16 	1
-    2	        1	                Vln b 	    Volts 	        1	UINT16 	1
-    3	        2	                Vln c 	    Volts 	        1	UINT16 	1
-
-    4	        3	                Vll ab 	    Volts 	        1	UINT16 	1
-    5	        4	                Vll bc 	    Volts 	        1	UINT16 	1
-    6	        5	                Vll ca 	    Volts 	        1	UINT16 	1
-
-    21	        20	                I1 THD mx 	PF/THD/Kfactor 	1	UINT16 	100
-    22	        21	                I2 THD mx 	PF/THD/Kfactor 	1	UINT16 	100
-    23	        22	                I3 THD mx 	PF/THD/Kfactor 	1	UINT16 	100
-    24	        23	                V1 THD mx 	PF/THD/Kfactor 	1	UINT16 	100
-    25	        24	                V2 THD mx 	PF/THD/Kfactor 	1	UINT16 	100
-    26	        25	                V3 THD mx 	PF/THD/Kfactor 	1	UINT16 	100
-
-
-    27	        26	                Freq 	    Amp/freq/unbal 	1	UINT16 	10
-
-    30	        29	                Ia 	        Amp/freq/unbal 	1	UINT16 	10
-    31	        30	                Ib 	        Amp/freq/unbal 	1	UINT16 	10
-    32	        31	                Ic 	        Amp/freq/unbal 	1	UINT16 	10
-
-    43	        42	                PF lead 	PF/THD/Kfactor 	1	INT16 	100
-    44	        43	                PF lag 	    PF/THD/Kfactor 	1	INT16 	100
-
-    50	        49	                kW tot 	    kW/kVAr/kVA 	2	INT32 	1/1000 
-    52	        51	                kVAR tot 	kW/kVAr/kVA 	2	INT32 	1/1000 
-    54	        53	                kVA tot 	kW/kVAr/kVA 	2	INT32 	1/1000 
-
-    56	        55	                kWh del 	kWh/kVArh 	    2	INT32 	1/1000 
-    58	        57	                kWh rec 	kWh/kVArh 	    2	INT32 	1/1000 
-    60	        59	                kVARh del 	kWh/kVArh 	    2	INT32 	1/1000 
-    62	        61	                kVARh rec 	kWh/kVArh 	    2	INT32 	1/1000 
+    Parameter	    Address	ModbusAddress	ARRAY	Regs	Format	Scaling
+    I a	            40150	149	            0	    1	    UINT16	10
+    I b	            40151	150	            1	    1	UINT16	10
+    I c	            40152	151	            2	    1	UINT16	10
+    Freq	        40159	158	            9	    1	UINT16	10
+    Vln a	        40166	165	            16	    2	UINT32	1
+    Vln b	        40168	167	            18	    2	UINT32	1
+    Vln c	        40170	169	            20	    2	UINT32	1
+    Vll ab	        40178	177	            28	    2	UINT32	1
+    Vll bc	        40180	179	            30	    2	UINT32	1
+    Vll ca	        40182	181	            32	    2	UINT32	1
+    kW tot	        40204	203	            54	    2	INT32	1
+    kVAR tot	    40214	213	            64	    2	INT32	1
+    kVA tot	        40224	223	            74	    2	INT32	1
+    kWh del	        40230	229	            80	    2	INT32	1
+    kWh rec	        40232	231	            82	    2	INT32	1
+    kVARh del	    40234	233	            84	    2	INT32	1
+    kVARh rec	    40236	235	            86	    2	INT32	1
+    PF sign tot	    40265	264	            115	    1	INT16	100
+    V1 THD mx	    40266	265	            116	    1	INT16	100
+    V2 THD mx	    40267	266	            117	    1	INT16	100
+    V3 THD mx	    40268	267	            118	    1	INT16	100
+    I1 THD mx	    40269	268	            119	    1	INT16	100
+    I2 THD mx	    40270	269	            120	    1	INT16	100
+    I3 THD mx	    40271	270	            121	    1	INT16	100
+    I1 K Factor	    40272	271	            122	    1	INT16	100
+    I2 K Factor	    40273	272	            123	    1	INT16	100
+    I3 K Factor	    40274	273	            124	    1	INT16	100
+    I1 Crest Factor	40275	274	            125	    1	INT16	100
+    I2 Crest Factor	40276	275	            126	    1	INT16	100
+    I3 Crest Factor	40277	276	            127	    1	INT16	100
 
     """
 
