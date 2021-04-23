@@ -90,7 +90,7 @@ def main(args):
     if args.mqtt_enabled:
         assert path.exists(mqtt_file), 'Device map not found: %s' % mqtt_file
         try:
-            send_data(mqtt_file, get_device_serial(), json.dumps(data))
+            send_data(mqtt_file, get_device_serial(), json.dumps(data_package))
         except Exception as e:
             log.error("Exception while sending MQTT message:"+str(e))
 
