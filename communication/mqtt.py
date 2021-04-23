@@ -43,7 +43,7 @@ def get_mqtt_config(config_yaml):
 
     #Print the server list to logs
     for device in sorted(server_list, key=lambda x:sorted(x.keys())):
-        log.debug('{} <--> {} <--> {} <--> {} <--> {} <--> {}'.format( device['client_id'], device['ip_address'], device['port'], device['username'], device['password'], device['enabled']))
+        log.debug('{} <--> {} <--> {} <--> {} <--> {} <--> {}'.format( device['topic'], device['ip_address'], device['port'], device['username'], device['password'], device['enabled']))
     
     #Return the server list
     return server_list
