@@ -60,7 +60,8 @@ def send_data(mqtt_config_path, device_serial, data_package):
         if server['enabled']:
             try:
                 #Publish the message
-                mqtt_client= mqtt.Client(str(device_serial), clean_session=True)
+                #client_name = str(device_serial)
+                mqtt_client= mqtt.Client(clean_session=True)
                 mqtt_client.username_pw_set(server['username'], password=server['password'])     
                 mqtt_client.tls_set_context(ssl.SSLContext(ssl.PROTOCOL_TLSv1_2))                  
                 mqtt_client.connect(server['ip_address'],server['port'])
