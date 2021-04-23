@@ -120,3 +120,4 @@ venv.bak/
 *.txt.gz
 *.json.gz
 config*.yml
+mqtt*.yml

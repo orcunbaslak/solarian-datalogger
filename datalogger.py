@@ -34,6 +34,7 @@ import json
 
 from os import path
 from datetime import datetime
+from communication.mqtt import send_data
 
 
 def main(args):
@@ -41,7 +42,9 @@ def main(args):
     #data_path = "/home/pi/solarian-datalogger-test/data/"
     data_path = cwd+"/data/"
     temp_path = cwd+"/tmp/"
-    config_file  = cwd+"/config/"+args.config
+    config_path = cwd+"/config/"
+    config_file  = config_path+args.config
+    mqtt_file = config_path+"mqtt.yml"
     devices = read_device_map(config_file)
     config_filename = os.path.splitext(os.path.basename(args.config))[0]
     data_package = []
@@ -59,7 +62,7 @@ def main(args):
 
             except Exception as e:
                 log.error("Exception while reading device:"+str(e))
-    
+
     # Get raspberry internals and also append to the datapack
     if(args.log_raspberry):
         import drivers.raspberry as rb
@@ -83,6 +86,14 @@ def main(args):
     if args.verbose:
         print(json.dumps(data_package, indent=4))
     
+    #Push data to MQTT
+    if args.mqtt_enabled:
+        assert path.exists(mqtt_file), 'Device map not found: %s' % mqtt_file
+        try:
+            send_data(mqtt_file, get_device_serial(), json.dumps(data))
+        except Exception as e:
+            log.error("Exception while sending MQTT message:"+str(e))
+
     #Write the GZipped JSON file to a temporary dir
     if not args.write_disabled:
         with gzip.open(temp_file_name, 'wt', encoding="utf-8") as file_to_write:
@@ -139,6 +150,7 @@ if __name__ == '__main__':
     parser.add_argument('--pi-analytics', action='store_true', dest='log_raspberry', help='Enable or disable RaspberryPi device data acquisition')
     parser.add_argument('--verbose', action='store_true', help='Print the acquired data to console')
     parser.add_argument('--write-disabled', action='store_true', dest='write_disabled', help='Disabled file writing. Dry-run.')
+    parser.add_argument('--mqtt', action='store_true', dest='mqtt_enabled', help='Enables the MQTT feature. Mqtt config file must be set.')
 
     args = parser.parse_args()
 
