@@ -25,6 +25,7 @@
 import ssl
 import yaml
 import time
+import json
 import logging
 import paho.mqtt.client as mqtt
 
@@ -48,7 +49,7 @@ def get_mqtt_config(config_yaml):
     #Return the server list
     return server_list
 
-def send_data(mqtt_config_path, device_serial, message):
+def send_data(mqtt_config_path, device_serial, data_package):
 
     #Get timings
     start_time = time.time()
@@ -59,15 +60,19 @@ def send_data(mqtt_config_path, device_serial, message):
         if server['enabled']:
             try:
                 #Publish the message
-                mqtt_client= mqtt.Client(str(device_serial))
+                mqtt_client= mqtt.Client(str(device_serial), clean_session=True)
                 mqtt_client.username_pw_set(server['username'], password=server['password'])     
                 mqtt_client.tls_set_context(ssl.SSLContext(ssl.PROTOCOL_TLSv1_2))                  
                 mqtt_client.connect(server['ip_address'],server['port'])
-                ret = mqtt_client.publish(server['topic'], str(message), qos=0)
-                if (ret.is_published()):
-                    log.debug("MQTT Message Published")
-                else:
-                    log.error("MQTT Publish Error!")
+                time.sleep(1)
+                for data in data_package:
+                    time.sleep(1)
+                    topic = server['topic']+"/"+data['Device_Name']
+                    ret = mqtt_client.publish(topic, str(json.dumps(data)))
+                    if (ret.is_published()):
+                        log.debug("MQTT Message Published")
+                    else:
+                        log.error("MQTT Publish Error!")
 
                 mqtt_client.disconnect()             
 
