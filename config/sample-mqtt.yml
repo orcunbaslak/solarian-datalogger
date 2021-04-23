@@ -1,6 +1,7 @@
 servers:
-    - name : SolarianMQTT
+    - topic : SolarianMQTT
       ip_address : 10.0.0.1
       port : 1234
       username : osman
       password: osmanmustprevail
+      enabled : yes

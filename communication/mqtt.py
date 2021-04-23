@@ -59,11 +59,11 @@ def send_data(mqtt_config_path, device_serial, message):
         if server['enabled']:
             try:
                 #Publish the message
-                mqtt_client= mqtt.Client(server['client_id'])
+                mqtt_client= mqtt.Client(str(device_serial))
                 mqtt_client.username_pw_set(server['username'], password=server['password'])     
                 mqtt_client.tls_set_context(ssl.SSLContext(ssl.PROTOCOL_TLSv1_2))                  
                 mqtt_client.connect(server['ip_address'],server['port'])
-                ret = mqtt_client.publish(str(device_serial), str(message), qos=0)
+                ret = mqtt_client.publish(server['topic'], str(message), qos=0)
                 if (ret.is_published()):
                     log.debug("MQTT Message Published")
                 else:
