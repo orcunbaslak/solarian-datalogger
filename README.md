@@ -71,21 +71,21 @@
 
 There are many causes for people to write code. As an engineering company owner; I was frusturated to see how incompetent datalogging companies
 doing business around. Data losses, buggy software and other issues led me to write a minimalist piece of software for solar system just to get the
-basic data from inverters/sensors/string combiners.
+basic data from inverters/sensors/string combiners into our influxdb server.
 
 Here's why:
 * As engineers; our time is money. Bad data makes us invest more time in it. We don't want to fix someone else's errors.
 * Good data yields good engineering analysis and accurate results. You deserve more **precise** and **accurate** results.
 * Why consume the time trying to fix someone elses inaccurate data instead of enjoying the sun outside with your family?
 
-Well, I think I've shared enough. Please feel free to fork or send pull requests. Please keep the code as minimal as possible.
+Please feel free to fork or send pull requests. Please keep the code as minimal as possible.
 
 ### Built With
-This project has been coded with Python 3. Modbus-tk library has been chosen for communication.
+This project has been coded with Python 3. Modbus-tk library has been chosen for device communication. Paho MQTT is choosen for MQTT communication
 * [Python](https://www.python.org/)
 * [modbus-tk](https://github.com/ljean/modbus-tk)
 * [PyYAML](https://github.com/yaml/pyyaml)
-
+* [Paho MQTT](https://github.com/eclipse/paho.mqtt.python)
 
 
 <!-- GETTING STARTED -->
