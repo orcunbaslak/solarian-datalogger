@@ -26,8 +26,10 @@ import ssl
 import yaml
 import time
 import json
+import copy
 import logging
-import paho.mqtt.client as mqtt
+from paho.mqtt.publish import multiple
+from collections import defaultdict
 
 from os import path
 
@@ -50,32 +52,33 @@ def get_mqtt_config(config_yaml):
     return server_list
 
 def send_data(mqtt_config_path, device_serial, data_package):
-
     #Get timings
     start_time = time.time()
 
     #Get servers list
     servers = get_mqtt_config(mqtt_config_path)
+
+    #Loop thru each server and PUBLISH
     for server in servers:
         if server['enabled']:
             try:
-                #Publish the message
-                #client_name = str(device_serial)
-                mqtt_client= mqtt.Client(clean_session=True)
-                mqtt_client.username_pw_set(server['username'], password=server['password'])     
-                mqtt_client.tls_set_context(ssl.SSLContext(ssl.PROTOCOL_TLSv1_2))                  
-                mqtt_client.connect(server['ip_address'],server['port'])
-                time.sleep(1)
+                #Create the iterable data package
+                mqtt_payload = []
                 for data in data_package:
-                    time.sleep(1)
-                    topic = server['topic']+"/"+data['Device_Name']
-                    ret = mqtt_client.publish(topic, str(json.dumps(data)))
-                    if (ret.is_published()):
-                        log.debug("MQTT Message Published")
-                    else:
-                        log.error("MQTT Publish Error!")
+                    payload = defaultdict(dict)
+                    payload['topic'] = server['topic']+"/"+data['Device_Name']
+                    payload['payload'] = json.dumps(data)
+                    mqtt_payload.append(copy.deepcopy(payload))
+                
+                auth_items = defaultdict(dict)
+                auth_items['username']= server['username']
+                auth_items['password'] = server['password']
 
-                mqtt_client.disconnect()             
+                multiple(mqtt_payload,
+                        hostname=server['ip_address'],
+                        port=server['port'],
+                        auth=auth_items,
+                        tls=ssl.SSLContext(ssl.PROTOCOL_TLSv1_2))        
 
             except Exception as e:
                 log.error("Exception while sending MQTT message:"+str(e))
