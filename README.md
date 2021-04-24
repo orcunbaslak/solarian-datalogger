@@ -116,9 +116,17 @@ git clone https://github.com/orcunbaslak/solarian-datalogger /home/pi/solarian-d
 ```sh
 cp sample-config.yml config.yml
 ```
-4. Edit the configuration file `config.yml`
+3. Edit the configuration file `config.yml`
 ```sh
 nano config.yml
+```
+4. Create a MQTT file from the sample (OPTIONAL)
+```sh
+cp sample-mqtt.yml mqtt.yml
+```
+5. Edit the configuration file `mqtt.yml` (OPTIONAL)
+```sh
+nano mqtt.yml
 ```
 
 
@@ -133,7 +141,15 @@ network/serial connections are working as intended.
 python3 datalogger.py
 ```
 
-
+You can use specific args to modify inner workings of the script
+```sh
+  --config CONFIG   YAML file containing device settings. Default "config.yml"
+  --log LOG         Log levels, DEBUG, INFO, WARNING, ERROR or CRITICAL
+  --pi-analytics    Enable or disable RaspberryPi device data acquisition
+  --verbose         Print the acquired data to console
+  --write-disabled  Disables file writing. Dry-run.
+  --mqtt            Enables the MQTT feature. Mqtt config file must be set.
+```
 
 <!-- ROADMAP -->
 ## Roadmap
