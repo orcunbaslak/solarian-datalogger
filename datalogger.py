@@ -167,7 +167,6 @@ if __name__ == '__main__':
     formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
     loghandle.setFormatter(formatter)
     log.addHandler(loghandle)
-    log.info('============ Datalogger Started =============')
 
     #Start timer
     start_time = time.time()
