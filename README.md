@@ -100,10 +100,10 @@ First you need to get Python 3 installed and running with dependencies correctly
 ```sh
 sudo apt update
 sudo apt-get -y dist-upgrade
-sudo apt-get -y install git python3-distutils gcc python3-dev
+sudo apt-get -y install git python3-distutils gcc python3-dev parallel lftp
 sudo curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
 sudo python3 get-pip.py
-sudo pip3 install pyyaml modbus_tk psutil
+sudo pip3 install pyyaml modbus_tk psutil paho-mqtt
 ```
 
 ### Installation

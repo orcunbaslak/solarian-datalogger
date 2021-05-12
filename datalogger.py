@@ -171,6 +171,9 @@ if __name__ == '__main__':
     #Start timer
     start_time = time.time()
 
+    #Start
+    log.info("=== Datalogger Started ===")
+    
     #Run the main code
     try:
         main(args=args)

@@ -1,13 +1,13 @@
 devices:
     - name : INVERTER_1
-      driver: abb_pvs800_tcp_modbustk
+      driver: inv_abb_pvs980 #Name of the driver file without .py extension
       enabled : yes #yes/no to enable/disable the device
       measurement: SPP_1  # InfluxDB Measurement (Table) Name Suffix
       slave_id : 1     # this is the slave address number
       ip_address : 192.168.1.2   # IPv4 destination address
       port : 502  # destination port
     - name : INVERTER_2
-      driver: abb_pvs800_tcp_modbustk
+      driver: inv_abb_pvs800
       enabled : no
       measurement: SPP_1  
       slave_id : 1     

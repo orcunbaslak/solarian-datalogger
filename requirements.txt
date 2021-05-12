@@ -1,7 +1,6 @@
+setuptools
 pyyaml
 modbus_tk
-setuptools
 paho-mqtt
-SungrowModbusTcpClient
-influxdb
 psutil
+influxdb
