@@ -24,13 +24,15 @@
 """
 
 import os
-import sys
-import yaml
-import logging
-import importlib
 import gzip
 import time
 import json
+import yaml
+import signal
+import logging
+import argparse
+import importlib
+
 
 from os import path
 from datetime import datetime
@@ -140,9 +142,17 @@ def get_device_serial():
 def get_timestamp():
     return datetime.today().strftime("%Y%m%d%H%M")
 
-if __name__ == '__main__':
+class GracefulKiller:
+    def __init__(self):
+        self.kill_now = False
+        signal.signal(signal.SIGINT, self.exit_gracefully)
+        signal.signal(signal.SIGTERM, self.exit_gracefully)
 
-    import argparse
+    def exit_gracefully(self, signum, frame):
+        log.info("=== Received SIGINT : %.4f Seconds ===" % (time.time() - start_time))
+        self.kill_now = True
+
+if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', default='config.yml', help='YAML file containing device settings. Default "config.yml"')
@@ -158,7 +168,7 @@ if __name__ == '__main__':
     cwd = os.path.dirname(os.path.abspath(__file__))
     os.chdir(cwd)
 
-    # Setup loggingg
+    # Setup logging
     log = logging.getLogger('solarian-datalogger')
     loglevel = args.log.upper()
     log.setLevel(getattr(logging, loglevel))
@@ -173,7 +183,10 @@ if __name__ == '__main__':
 
     #Start
     log.info("=== Datalogger Started ===")
-    
+
+    #Initialize GracefulKiller to record SIGINTs
+    killer = GracefulKiller()
+
     #Run the main code
     try:
         main(args=args)
