@@ -121,3 +121,4 @@ venv.bak/
 *.json.gz
 config*.yml
 mqtt*.yml
+graylog*.yml

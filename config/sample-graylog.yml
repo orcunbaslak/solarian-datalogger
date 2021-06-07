@@ -1,0 +1,3 @@
+server:
+    - server_address : logger.server.com
+      port : 12205

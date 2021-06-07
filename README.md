@@ -129,7 +129,14 @@ cp sample-mqtt.yml mqtt.yml
 ```sh
 nano mqtt.yml
 ```
-
+6. Create a GrayLog file from the sample (OPTIONAL)
+```sh
+cp sample-graylog.yml graylog.yml
+```
+7. Edit the configuration file `graylog.yml` (OPTIONAL)
+```sh
+nano graylog.yml
+```
 
 
 <!-- USAGE EXAMPLES -->
@@ -150,7 +157,7 @@ You can use specific args to modify inner workings of the script
   --verbose         Print the acquired data to console
   --write-disabled  Disables file writing. Dry-run.
   --mqtt            Enables the MQTT feature. Mqtt config file must be set.
-  --graylog         Pushes logging data to the specified GrayLog server.
+  --graylog         Pushes logging data to the specified GrayLog server. Graylog config file must be set.
 ```
 
 <!-- ROADMAP -->

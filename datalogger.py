@@ -48,6 +48,7 @@ def main(args):
     config_path = cwd+"/config/"
     config_file  = config_path+args.config
     mqtt_file = config_path+"mqtt.yml"
+    graylog_file = config_path+"graylog.yml"
     devices = read_device_map(config_file)
     config_filename = os.path.splitext(os.path.basename(args.config))[0]
     data_package = []
@@ -146,9 +147,11 @@ def get_timestamp():
 class LoggingFilter(logging.Filter):
     def __init__(self):
         self.device_id = get_device_serial()
+        self.config_file = args.config
 
     def filter(self, record):
         record.device_id = self.device_id
+        record.config_file = self.config_file
         return True
 
 class GracefulKiller:
@@ -174,7 +177,7 @@ if __name__ == '__main__':
     parser.add_argument('--verbose', action='store_true', help='Print the acquired data to console')
     parser.add_argument('--write-disabled', action='store_true', dest='write_disabled', help='Disabled file writing. Dry-run.')
     parser.add_argument('--mqtt', action='store_true', dest='mqtt_enabled', help='Enables the MQTT feature. Mqtt config file must be set.')
-    parser.add_argument('--graylog', dest='graylog', help='Provide URL for GrayLog logging server')
+    parser.add_argument('--graylog', action='store_true', dest='graylog', help='Enable GrayLog remote logging. Graylog config file must be set.')
 
     args = parser.parse_args()
 
@@ -193,8 +196,11 @@ if __name__ == '__main__':
     log.addHandler(loghandle)
 
     # Remote Logging
-    if args.graylog is not None:
-        grayhandler = graypy.GELFTCPHandler(args.graylog, 12206)
+    if args.graylog:
+        graylog_config = cwd+"/config/graylog.yml"
+        assert path.exists(graylog_config), 'Device map not found: %s' % graylog_config
+        graylog_servers = yaml.load(open(graylog_config), Loader=yaml.FullLoader)
+        grayhandler = graypy.GELFTCPHandler(graylog_servers['server'][0]['server_address'], graylog_servers['server'][0]['port'])
         log.addHandler(grayhandler)
         log.addFilter(LoggingFilter())
 
