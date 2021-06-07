@@ -98,7 +98,7 @@ def get_data(ip_address, port, slave_id, device_name, measurement_suffix):
     masterTCP.set_verbose(True)
 
     #Set logging
-    log.debug('Module: %s - Driver: %s - Reading device %s:%s', DRIVER_NAME, device_name, ip_address,port)
+    log.debug('Module: %s - Driver: %s - Reading device %s:%s - Slave: %s', DRIVER_NAME, device_name, ip_address, port, slave_id)
 
     #Create an ordered list to store the values
     values = OrderedDict()
