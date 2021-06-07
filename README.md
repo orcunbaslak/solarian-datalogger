@@ -103,7 +103,7 @@ sudo apt-get -y dist-upgrade
 sudo apt-get -y install git python3-distutils gcc python3-dev parallel lftp
 sudo curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
 sudo python3 get-pip.py
-sudo pip3 install pyyaml modbus_tk psutil paho-mqtt
+sudo pip3 install pyyaml modbus_tk psutil paho-mqtt graypy
 ```
 
 ### Installation
@@ -150,6 +150,7 @@ You can use specific args to modify inner workings of the script
   --verbose         Print the acquired data to console
   --write-disabled  Disables file writing. Dry-run.
   --mqtt            Enables the MQTT feature. Mqtt config file must be set.
+  --graylog         Pushes logging data to the specified GrayLog server.
 ```
 
 <!-- ROADMAP -->

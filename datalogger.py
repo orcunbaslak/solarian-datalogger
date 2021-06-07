@@ -28,6 +28,7 @@ import gzip
 import time
 import json
 import yaml
+import graypy
 import signal
 import logging
 import argparse
@@ -63,7 +64,7 @@ def main(args):
                     data_package.append(data)
 
             except Exception as e:
-                log.error("Exception while reading device:"+str(e))
+                log.exception("Exception while reading device:"+str(e))
 
     # Get raspberry internals and also append to the datapack
     if(args.log_raspberry):
@@ -94,7 +95,7 @@ def main(args):
         try:
             send_data(mqtt_file, get_device_serial(), data_package)
         except Exception as e:
-            log.error("Exception while sending MQTT message:"+str(e))
+            log.exception("Exception while sending MQTT message:"+str(e))
 
     #Write the GZipped JSON file to a temporary dir
     if not args.write_disabled:
@@ -142,6 +143,14 @@ def get_device_serial():
 def get_timestamp():
     return datetime.today().strftime("%Y%m%d%H%M")
 
+class LoggingFilter(logging.Filter):
+    def __init__(self):
+        self.device_id = get_device_serial()
+
+    def filter(self, record):
+        record.device_id = self.device_id
+        return True
+
 class GracefulKiller:
     def __init__(self):
         self.kill_now = False
@@ -149,11 +158,15 @@ class GracefulKiller:
         signal.signal(signal.SIGTERM, self.exit_gracefully)
 
     def exit_gracefully(self, signum, frame):
-        log.info("=== Received SIGINT : %.4f Seconds ===" % (time.time() - start_time))
+        log.critical("=== Received SIGINT : %.4f Seconds ===" % (time.time() - start_time))
         self.kill_now = True
 
 if __name__ == '__main__':
 
+    #Start timer
+    start_time = time.time()
+
+    #Parse arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', default='config.yml', help='YAML file containing device settings. Default "config.yml"')
     parser.add_argument('--log', default='WARNING', help='Log levels, DEBUG, INFO, WARNING, ERROR or CRITICAL')
@@ -161,6 +174,7 @@ if __name__ == '__main__':
     parser.add_argument('--verbose', action='store_true', help='Print the acquired data to console')
     parser.add_argument('--write-disabled', action='store_true', dest='write_disabled', help='Disabled file writing. Dry-run.')
     parser.add_argument('--mqtt', action='store_true', dest='mqtt_enabled', help='Enables the MQTT feature. Mqtt config file must be set.')
+    parser.add_argument('--graylog', dest='graylog', help='Provide URL for GrayLog logging server')
 
     args = parser.parse_args()
 
@@ -168,7 +182,7 @@ if __name__ == '__main__':
     cwd = os.path.dirname(os.path.abspath(__file__))
     os.chdir(cwd)
 
-    # Setup logging
+    # File Logging
     log = logging.getLogger('solarian-datalogger')
     loglevel = args.log.upper()
     log.setLevel(getattr(logging, loglevel))
@@ -178,8 +192,11 @@ if __name__ == '__main__':
     loghandle.setFormatter(formatter)
     log.addHandler(loghandle)
 
-    #Start timer
-    start_time = time.time()
+    # Remote Logging
+    if args.graylog is not None:
+        grayhandler = graypy.GELFTCPHandler(args.graylog, 12206)
+        log.addHandler(grayhandler)
+        log.addFilter(LoggingFilter())
 
     #Start
     log.info("=== Datalogger Started ===")
