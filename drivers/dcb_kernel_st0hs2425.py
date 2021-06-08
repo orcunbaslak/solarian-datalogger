@@ -112,7 +112,7 @@ def get_data(ip_address, port, slave_id, device_name, measurement_suffix):
     x = 0
     while x < TRY_AMOUNT:
         try:
-            read1 = masterTCP.execute(slave_id, cst.READ_INPUT_REGISTERS, 30052, 47)
+            read1 = masterTCP.execute(slave_id, cst.READ_INPUT_REGISTERS, 51, 47)
             log.debug('Module: %s - Read 1 Successful : %s - %s:%s - TRIES:%s', DRIVER_NAME, device_name, ip_address, port, x)
             x = TRY_AMOUNT
         except Exception as e:
