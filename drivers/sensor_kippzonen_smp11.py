@@ -37,7 +37,7 @@ import logging
 log = logging.getLogger('solarian-datalogger')
 
 
-DRIVER_NAME = 'SENSORS_IRRADIATION_VANARISU'
+DRIVER_NAME = 'SENSORS_PYRANOMETER_KIPPZONEN_SMP11'
 DRIVER_VERSION = '0.1'
 MODBUS_TIMEOUT = 3
 TRY_AMOUNT = 3
@@ -57,7 +57,7 @@ def get_data(ip_address, port, slave_id, device_name, measurement_suffix):
 
     == READ 1 ==
 
-    6  	Irradiation                1            uint16      1
+    5  	IO_SENSOR1_DATA (Calibrated and Corrected)                1            uint16      1
 
     """
 
@@ -84,7 +84,7 @@ def get_data(ip_address, port, slave_id, device_name, measurement_suffix):
     x = 0
     while x < TRY_AMOUNT:
         try:
-            read1 = masterTCP.execute(slave_id, cst.READ_INPUT_REGISTERS, 0, 9)
+            read1 = masterTCP.execute(slave_id, cst.READ_INPUT_REGISTERS, 5, 1)
             log.debug('Module: %s - Read 1 Successful : %s - %s:%s - TRIES:%s', DRIVER_NAME, device_name, ip_address, port, x)
             x = TRY_AMOUNT
         except Exception as e:
@@ -97,11 +97,8 @@ def get_data(ip_address, port, slave_id, device_name, measurement_suffix):
         return False
     
     #Parse the data for read 1
-    values['Irradiation'] = float(signed(read1[0])) / 10  
-    values['Cell_Temp'] = float(signed(read1[7])) / 10 
-
-
-        
+    values['Pyranometer_Irradiation'] = float(signed(read1[0])) / 1 
+ 
     log.debug('Modbus Scan Completed in : %.4f (DRIVER: %s - DEVICE: %s - UNIT: %s:%s)',(time.time() - start_time),DRIVER_NAME, device_name, ip_address, port)    
     return values
         

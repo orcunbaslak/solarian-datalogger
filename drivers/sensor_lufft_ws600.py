@@ -37,7 +37,7 @@ import logging
 log = logging.getLogger('solarian-datalogger')
 
 
-DRIVER_NAME = 'SENSORS_METEOROLOGY_VANARISU'
+DRIVER_NAME = 'SENSORS_LUFFT_WS600'
 DRIVER_VERSION = '0.1'
 MODBUS_TIMEOUT = 3
 TRY_AMOUNT = 3
@@ -57,7 +57,14 @@ def get_data(ip_address, port, slave_id, device_name, measurement_suffix):
 
     == READ 1 ==
 
-    6  	Irradiation                1            uint16      1
+    10  	Relative Humidity           10            uint16      10
+    14  	Air Pressure                14            uint16      10
+    18  	Wind Direction              18            uint16      10
+    27  	Global Radiation            27            uint16      10
+    31  	Air Temperature             31            uint16      10
+    35  	Dew Point                   35            uint16      10
+    42  	Wind Speed                  42            uint16      10
+    48  	Precipitation               48            uint16      100
 
     """
 
@@ -84,7 +91,7 @@ def get_data(ip_address, port, slave_id, device_name, measurement_suffix):
     x = 0
     while x < TRY_AMOUNT:
         try:
-            read1 = masterTCP.execute(slave_id, cst.READ_INPUT_REGISTERS, 0, 124)
+            read1 = masterTCP.execute(slave_id, cst.READ_INPUT_REGISTERS, 0, 50)
             log.debug('Module: %s - Read 1 Successful : %s - %s:%s - TRIES:%s', DRIVER_NAME, device_name, ip_address, port, x)
             x = TRY_AMOUNT
         except Exception as e:
