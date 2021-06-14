@@ -101,7 +101,9 @@ def get_data(ip_address, port, slave_id, device_name, measurement_suffix):
     values['Ref_Cell_Temp'] = float(signed(read1[7])) / 10 
     values['Ext_Cell_Temp'] = float(signed(read1[8])) / 10
 
-
+    #Dont send a negative irradiation
+    if values['Irradiation'] < 0:
+        values['Irradiation'] = float(0.0)
         
     log.debug('Modbus Scan Completed in : %.4f (DRIVER: %s - DEVICE: %s - UNIT: %s:%s)',(time.time() - start_time),DRIVER_NAME, device_name, ip_address, port)    
     return values

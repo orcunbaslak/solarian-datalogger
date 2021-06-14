@@ -98,6 +98,10 @@ def get_data(ip_address, port, slave_id, device_name, measurement_suffix):
     
     #Parse the data for read 1
     values['Pyranometer_Irradiation'] = float(signed(read1[0])) / 1 
+
+    #Dont send a negative irradiation
+    if values['Pyranometer_Irradiation'] < 0:
+        values['Pyranometer_Irradiation'] = float(0.0)
  
     log.debug('Modbus Scan Completed in : %.4f (DRIVER: %s - DEVICE: %s - UNIT: %s:%s)',(time.time() - start_time),DRIVER_NAME, device_name, ip_address, port)    
     return values
