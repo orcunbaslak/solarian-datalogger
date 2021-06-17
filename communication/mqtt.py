@@ -77,6 +77,7 @@ def send_data(mqtt_config_path, device_serial, data_package):
                 multiple(mqtt_payload,
                         hostname=server['ip_address'],
                         port=server['port'],
+                        keepalive=15,
                         auth=auth_items,
                         tls=ssl.SSLContext(ssl.PROTOCOL_TLSv1_2))        
 
