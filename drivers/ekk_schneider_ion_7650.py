@@ -130,15 +130,15 @@ def get_data(ip_address, port, slave_id, device_name, measurement_suffix):
     while x < TRY_AMOUNT:
         try:
             read2 = masterTCP.execute(slave_id, cst.READ_HOLDING_REGISTERS, 20, 6)
-            log.debug('Module: %s - Read 1 Successful : %s - %s:%s - TRIES:%s', DRIVER_NAME, device_name, ip_address, port, x)
+            log.debug('Module: %s - Read 2 Successful : %s - %s:%s - TRIES:%s', DRIVER_NAME, device_name, ip_address, port, x)
             x = TRY_AMOUNT
         except Exception as e:
-            log.error('Module: %s - Read 1 Error : %s - %s:%s - TRIES:%s', DRIVER_NAME, device_name, ip_address, port, x)
+            log.error('Module: %s - Read 2 Error : %s - %s:%s - TRIES:%s', DRIVER_NAME, device_name, ip_address, port, x)
             x += 1
             time.sleep(0.5)
     
     if not "read2" in locals():
-        log.error('Modbus Scan Failed (Read1) : %.4f (DRIVER: %s - DEVICE: %s - UNIT: %s:%s)',(time.time() - start_time),DRIVER_NAME, device_name, ip_address, port)  
+        log.error('Modbus Scan Failed (Read2) : %.4f (DRIVER: %s - DEVICE: %s - UNIT: %s:%s)',(time.time() - start_time),DRIVER_NAME, device_name, ip_address, port)  
         return False
 
 
