@@ -75,18 +75,15 @@ def get_data(ip_address, port, slave_id, device_name, measurement_suffix):
     kVARh del	    40234	233	            84	    2	INT32	1
     kVARh rec	    40236	235	            86	    2	INT32	1
     PF sign tot	    40265	264	            115	    1	INT16	100
-    V1 THD mx	    40266	265	            116	    1	INT16	100
-    V2 THD mx	    40267	266	            117	    1	INT16	100
-    V3 THD mx	    40268	267	            118	    1	INT16	100
-    I1 THD mx	    40269	268	            119	    1	INT16	100
-    I2 THD mx	    40270	269	            120	    1	INT16	100
-    I3 THD mx	    40271	270	            121	    1	INT16	100
-    I1 K Factor	    40272	271	            122	    1	INT16	100
-    I2 K Factor	    40273	272	            123	    1	INT16	100
-    I3 K Factor	    40274	273	            124	    1	INT16	100
-    I1 Crest Factor	40275	274	            125	    1	INT16	100
-    I2 Crest Factor	40276	275	            126	    1	INT16	100
-    I3 Crest Factor	40277	276	            127	    1	INT16	100
+
+    == READ 2 ==
+    Parameter	    Address	ModbusAddress	ARRAY	Regs	Format	Scaling
+    I1 THD mx	    40266	20	            0	    1	    INT16	100
+    I2 THD mx	    40267	21	            1	    1	    INT16	100
+    I3 THD mx	    40268	22	            2	    1	    INT16	100
+    V1 THD mx	    40269	23	            3	    1	    INT16	100
+    V2 THD mx	    40270	24	            4	    1	    INT16	100
+    V3 THD mx	    40271	25	            5	    1	    INT16	100
 
     """
 
@@ -113,7 +110,7 @@ def get_data(ip_address, port, slave_id, device_name, measurement_suffix):
     x = 0
     while x < TRY_AMOUNT:
         try:
-            read1 = masterTCP.execute(slave_id, cst.READ_HOLDING_REGISTERS, 149, 122)
+            read1 = masterTCP.execute(slave_id, cst.READ_HOLDING_REGISTERS, 149, 116)
             log.debug('Module: %s - Read 1 Successful : %s - %s:%s - TRIES:%s', DRIVER_NAME, device_name, ip_address, port, x)
             if(convert_registers_to_long(16, 17, False, 0, read1) == 0):
                 log.error('Voltage is zero!!')
@@ -125,6 +122,22 @@ def get_data(ip_address, port, slave_id, device_name, measurement_suffix):
             time.sleep(0.5)
     
     if not "read1" in locals():
+        log.error('Modbus Scan Failed (Read1) : %.4f (DRIVER: %s - DEVICE: %s - UNIT: %s:%s)',(time.time() - start_time),DRIVER_NAME, device_name, ip_address, port)  
+        return False
+
+    # Read second part
+    x = 0
+    while x < TRY_AMOUNT:
+        try:
+            read2 = masterTCP.execute(slave_id, cst.READ_HOLDING_REGISTERS, 20, 6)
+            log.debug('Module: %s - Read 1 Successful : %s - %s:%s - TRIES:%s', DRIVER_NAME, device_name, ip_address, port, x)
+            x = TRY_AMOUNT
+        except Exception as e:
+            log.error('Module: %s - Read 1 Error : %s - %s:%s - TRIES:%s', DRIVER_NAME, device_name, ip_address, port, x)
+            x += 1
+            time.sleep(0.5)
+    
+    if not "read2" in locals():
         log.error('Modbus Scan Failed (Read1) : %.4f (DRIVER: %s - DEVICE: %s - UNIT: %s:%s)',(time.time() - start_time),DRIVER_NAME, device_name, ip_address, port)  
         return False
 
@@ -148,19 +161,15 @@ def get_data(ip_address, port, slave_id, device_name, measurement_suffix):
     values['kVARh_del']     = convert_registers_to_long(84, 85, True, 0, read1)
     values['kVARh_rec']     = convert_registers_to_long(86, 87, True, 0, read1) 
 
-    values['I1_THD_max']    = float(signed(read1[119])) / 100
-    values['I2_THD_max']    = float(signed(read1[120])) / 100
-    values['I3_THD_max']    = float(signed(read1[121])) / 100
-    values['V1_THD_max']    = float(signed(read1[116])) / 100
-    values['V2_THD_max']    = float(signed(read1[117])) / 100
-    values['V3_THD_max']    = float(signed(read1[118])) / 100
+    values['I1_THD_max']    = float(signed(read2[0])) / 100
+    values['I2_THD_max']    = float(signed(read2[1])) / 100
+    values['I3_THD_max']    = float(signed(read2[2])) / 100
+    values['V1_THD_max']    = float(signed(read2[3])) / 100
+    values['V2_THD_max']    = float(signed(read2[4])) / 100
+    values['V3_THD_max']    = float(signed(read2[5])) / 100
 
     values['PF_tot']        = float(signed(read1[115])) / 100
 
-
-
-
-    
     log.debug('Modbus Scan Completed in : %.4f (DRIVER: %s - UNIT: %s:%s)',(time.time() - start_time),DRIVER_NAME, ip_address, port)    
     return values
         
