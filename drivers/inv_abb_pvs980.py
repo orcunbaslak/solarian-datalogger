@@ -329,7 +329,6 @@ def get_data(ip_address, port, slave_id, device_name, measurement_suffix):
             time.sleep(0.5)
         finally:
             masterTCP.close()
-            print("cloose")
 
     if not "read2" in locals():
         log.error('Modbus Scan Failed (Read2) : %.4f (DRIVER: %s - DEVICE: %s - UNIT: %s:%s)',(time.time() - start_time),DRIVER_NAME, device_name, ip_address, port)  
