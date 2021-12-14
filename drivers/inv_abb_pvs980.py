@@ -25,6 +25,7 @@
 import os
 import time
 import struct
+from random import randrange
 from struct import pack, unpack
 from datetime import datetime
 from collections import OrderedDict
@@ -40,6 +41,7 @@ log = logging.getLogger('solarian-datalogger')
 DRIVER_NAME = 'ABB_PVS980_TCP'
 DRIVER_VERSION = '0.1'
 MODBUS_TIMEOUT = 3
+MAX_SLEEP_TIME = 5
 TRY_AMOUNT = 10
 
 module_name = os.path.splitext(os.path.basename(__file__))[0]
@@ -308,7 +310,7 @@ def get_data(ip_address, port, slave_id, device_name, measurement_suffix):
         except Exception as e:
             log.error('Module: %s - Read 1 Error : %s - %s:%s - TRIES:%s', DRIVER_NAME, device_name, ip_address, port, x)
             x += 1
-            time.sleep(0.5)
+            time.sleep(randrange(MAX_SLEEP_TIME))
         finally:
             masterTCP.close()
     
@@ -326,7 +328,7 @@ def get_data(ip_address, port, slave_id, device_name, measurement_suffix):
         except Exception as e:
             log.error('Module: %s - Read 2 Error : %s - %s:%s - TRIES:%s', DRIVER_NAME, device_name, ip_address, port, x)
             x += 1
-            time.sleep(0.5)
+            time.sleep(randrange(MAX_SLEEP_TIME))
         finally:
             masterTCP.close()
 
@@ -344,7 +346,7 @@ def get_data(ip_address, port, slave_id, device_name, measurement_suffix):
         except Exception as e:
             log.error('Module: %s - Read 3 Error : %s - %s:%s - TRIES:%s', DRIVER_NAME, device_name, ip_address, port, x)
             x += 1
-            time.sleep(0.5)
+            time.sleep(randrange(MAX_SLEEP_TIME))
         finally:
             masterTCP.close()
 
