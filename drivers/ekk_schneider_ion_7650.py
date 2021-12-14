@@ -40,7 +40,7 @@ log = logging.getLogger('solarian-datalogger')
 DRIVER_NAME = 'SCHNEIDER_ION_7650_TCP_INAVITAS'
 DRIVER_VERSION = '0.1'
 MODBUS_TIMEOUT = 3
-TRY_AMOUNT = 3
+TRY_AMOUNT = 10
 
 module_name = os.path.splitext(os.path.basename(__file__))[0]
 
@@ -120,6 +120,8 @@ def get_data(ip_address, port, slave_id, device_name, measurement_suffix):
             log.error('Module: %s - Read 1 Error : %s - %s:%s - TRIES:%s', DRIVER_NAME, device_name, ip_address, port, x)
             x += 1
             time.sleep(0.5)
+        finally:
+            masterTCP.close()
     
     if not "read1" in locals():
         log.error('Modbus Scan Failed (Read1) : %.4f (DRIVER: %s - DEVICE: %s - UNIT: %s:%s)',(time.time() - start_time),DRIVER_NAME, device_name, ip_address, port)  
@@ -136,12 +138,15 @@ def get_data(ip_address, port, slave_id, device_name, measurement_suffix):
             log.error('Module: %s - Read 2 Error : %s - %s:%s - TRIES:%s', DRIVER_NAME, device_name, ip_address, port, x)
             x += 1
             time.sleep(0.5)
+        finally:
+            masterTCP.close()
     
     if not "read2" in locals():
         log.error('Modbus Scan Failed (Read2) : %.4f (DRIVER: %s - DEVICE: %s - UNIT: %s:%s)',(time.time() - start_time),DRIVER_NAME, device_name, ip_address, port)  
         return False
 
-
+    masterTCP.close()
+    
     #UINT16
     values['Ia']            = float(read1[0])  / 10
     values['Ib']            = float(read1[1])  / 10

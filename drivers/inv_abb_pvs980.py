@@ -40,7 +40,7 @@ log = logging.getLogger('solarian-datalogger')
 DRIVER_NAME = 'ABB_PVS980_TCP'
 DRIVER_VERSION = '0.1'
 MODBUS_TIMEOUT = 3
-TRY_AMOUNT = 3
+TRY_AMOUNT = 10
 
 module_name = os.path.splitext(os.path.basename(__file__))[0]
 
@@ -309,6 +309,8 @@ def get_data(ip_address, port, slave_id, device_name, measurement_suffix):
             log.error('Module: %s - Read 1 Error : %s - %s:%s - TRIES:%s', DRIVER_NAME, device_name, ip_address, port, x)
             x += 1
             time.sleep(0.5)
+        finally:
+            masterTCP.close()
     
     if not "read1" in locals():
         log.error('Modbus Scan Failed (Read1) : %.4f (DRIVER: %s - DEVICE: %s - UNIT: %s:%s)',(time.time() - start_time),DRIVER_NAME, device_name, ip_address, port)  
@@ -325,6 +327,9 @@ def get_data(ip_address, port, slave_id, device_name, measurement_suffix):
             log.error('Module: %s - Read 2 Error : %s - %s:%s - TRIES:%s', DRIVER_NAME, device_name, ip_address, port, x)
             x += 1
             time.sleep(0.5)
+        finally:
+            masterTCP.close()
+            print("cloose")
 
     if not "read2" in locals():
         log.error('Modbus Scan Failed (Read2) : %.4f (DRIVER: %s - DEVICE: %s - UNIT: %s:%s)',(time.time() - start_time),DRIVER_NAME, device_name, ip_address, port)  
@@ -341,11 +346,14 @@ def get_data(ip_address, port, slave_id, device_name, measurement_suffix):
             log.error('Module: %s - Read 3 Error : %s - %s:%s - TRIES:%s', DRIVER_NAME, device_name, ip_address, port, x)
             x += 1
             time.sleep(0.5)
+        finally:
+            masterTCP.close()
 
     if not "read3" in locals():
         log.error('Modbus Scan Failed (Read3) : %.4f (DRIVER: %s - DEVICE: %s - UNIT: %s:%s)',(time.time() - start_time),DRIVER_NAME, device_name, ip_address, port)  
         return False
 
+    masterTCP.close()
 
     #Parse the data for read 1
     values['Active_Power']              = float(signed(read1[2]))
@@ -559,7 +567,7 @@ def get_data(ip_address, port, slave_id, device_name, measurement_suffix):
 
     log.debug('Modbus Scan Completed in : %.4f (DRIVER: %s - UNIT: %s:%s)',(time.time() - start_time),DRIVER_NAME, ip_address, port)    
     return values
-        
+
 def convert_registers_to_long(start_bit, stop_bit, signed, decimals=0, data=[]):
         decimal = {0: 1,1: 10, 2: 100, 3: 1000}
         mypack = pack('>HH',data[start_bit],data[stop_bit])
