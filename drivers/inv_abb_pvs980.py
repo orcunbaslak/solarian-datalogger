@@ -57,6 +57,21 @@ def get_data(ip_address, port, slave_id, device_name, measurement_suffix):
     
     Modbus Addresses of the device are as follows:
 
+    == READ 0 ==
+    42240	Heartbeat                               0       	 uint16     1     -
+    42241	Control Word                            1            bf16 		1     -
+    42242	Active power Limit                      2            int16      0.1   %Pmax
+    42243	Qref Operation Mode                     3            int16      -     -
+    42244	Reactive Power Reference kVAR           4            uint16     1     kVAR
+    42245	Reactive Power Reference %              5            uint16     0.1   %Qnom
+    42246	PF Reference                            6            uint16     0.001 -
+    42247	Vac Reference                           7            uint16     0.1   V
+    42248	Active Power Limit Ramp Up Rate         8            uint16     1     %Pnom/ms
+    42249	Active Power Limit Ramp Down Rate       9            uint16     1     %Pnom/ms
+    42250	Reactive Power Limit Ramp Up Rate       10           uint16     1     %Qnom/ms
+    42251	Reactive Power Limit Ramp Down Rate     11           uint16     1     %Qnom/ms
+
+
     == READ 1 ==
     42496	Heartbeat                               0       	
     42497	Inverter main status word               1            bf16 		
@@ -300,6 +315,24 @@ def get_data(ip_address, port, slave_id, device_name, measurement_suffix):
     values['Measurement_Suffix'] = measurement_suffix
     values['Date'] = get_timestamp_for_influxdb()
     
+    # Read zero part
+    x = 0
+    while x < TRY_AMOUNT:
+        try:
+            read0 = masterTCP.execute(slave_id, cst.READ_HOLDING_REGISTERS, 42240, 12)
+            log.debug('Module: %s - Read 0 Successful : %s - %s:%s - TRIES:%s', DRIVER_NAME, device_name, ip_address, port, x)
+            x = TRY_AMOUNT
+        except Exception as e:
+            log.error('Module: %s - Read 0 Error : %s - %s:%s - TRIES:%s', DRIVER_NAME, device_name, ip_address, port, x)
+            x += 1
+            time.sleep(randrange(MAX_SLEEP_TIME))
+        finally:
+            masterTCP.close()
+    
+    if not "read0" in locals():
+        log.error('Modbus Scan Failed (Read0) : %.4f (DRIVER: %s - DEVICE: %s - UNIT: %s:%s)',(time.time() - start_time),DRIVER_NAME, device_name, ip_address, port)  
+        return False
+
     # Read first part
     x = 0
     while x < TRY_AMOUNT:
@@ -356,6 +389,18 @@ def get_data(ip_address, port, slave_id, device_name, measurement_suffix):
 
     masterTCP.close()
 
+    #Parse the data for read 0
+    values['Active_Power_Limit']        = float(signed(read0[2])) / 10
+    values['QRef_Operation_Mode']       = float(signed(read0[3]))
+    values['Reactive_Power_Ref_kVAR']   = float(read0[4])
+    values['Reactive_Power_Ref_Per']    = float(read0[5])         / 10
+    values['PF_Reference']              = float(signed(read0[6])) / 1000
+    values['Vac_Reference']             = float(signed(read0[7])) / 10
+    values['Active_RampUp_Rate']        = float(signed(read0[8])) 
+    values['Active_RampDown_Rate']      = float(signed(read0[9])) 
+    values['Reactive_RampUp_Rate']      = float(signed(read0[10]))
+    values['Reactive_RampDown_Rate']    = float(signed(read0[11]))
+
     #Parse the data for read 1
     values['Active_Power']              = float(signed(read1[2]))
     values['Reactive_Power']            = float(signed(read1[3]))
@@ -397,6 +442,7 @@ def get_data(ip_address, port, slave_id, device_name, measurement_suffix):
     #Extract Status Words
     electromechanical_word              = int(read3[0])
     main_status_word                    = int(read1[1])
+    control_word                        = int(read0[1])
     limiting_status_word                = int(read3[3])
     mppt_status_word                    = int(read3[5])
     grid_status_word                    = int(read3[6])
@@ -406,6 +452,16 @@ def get_data(ip_address, port, slave_id, device_name, measurement_suffix):
     fault_status_word_1                 = int(read3[10])
     fault_status_word_2                 = int(read3[11])
     alarm_status_word                   = int(read3[12])
+
+    #Extract bits from words CONTROL WORD
+    values['Status_ControlWord_StopInverter']               = float(control_word >> 0 & 1)
+    values['Status_ControlWord_PriorityMode']               = float(control_word >> 1 & 1)
+    values['Status_ControlWord_NightQCompensation']         = float(control_word >> 2 & 1)
+    values['Status_ControlWord_FaultReset']                 = float(control_word >> 3 & 1)
+    values['Status_ControlWord_TransferTrip']               = float(control_word >> 4 & 1)
+    values['Status_ControlWord_RebootInverter']             = float(control_word >> 5 & 1)
+    values['Status_ControlWord_OpenMVBreaker']              = float(control_word >> 6 & 1)
+    values['Status_ControlWord_CloseMVBreaker']             = float(control_word >> 7 & 1)
 
     #Extract bits from words ELECTROMECHANICAL
     values['Status_Electromechanical_ACContactorM1']        = float(electromechanical_word >> 0 & 1)
