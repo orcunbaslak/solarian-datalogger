@@ -118,11 +118,16 @@ class _SlowDriver:
 def test_one_slow_device_does_not_fail_the_queue_behind_it(monkeypatch):
     """--workers 1 is the documented RS-485 mode; one slow meter cost the rest.
 
-    M1 overruns its timeout, but M2 and M3 are instant and would run as soon as
-    the slot freed. They used to be failed immediately as 'not polled'.
+    M1 overruns its timeout, but M2 and M3 are instant and run as soon as the
+    slot frees. They used to be failed immediately as 'not polled'.
+
+    There is deliberately no deadline racing M2 and M3 here: a device that
+    overruns holds its worker for its real duration, so any budget derived from
+    the timeouts would be eaten by M1 and this test would be a coin flip.
     """
     def fake_load(name):
-        return _SlowDriver(0.6 if name == 'slow_one' else 0.0)
+        # M1 holds the single worker for 0.5s, well past its 0.15s timeout.
+        return _SlowDriver(0.5 if name == 'slow_one' else 0.0)
 
     monkeypatch.setattr(runner.driver_registry, 'load', fake_load)
 
@@ -131,7 +136,7 @@ def test_one_slow_device_does_not_fail_the_queue_behind_it(monkeypatch):
         {'name': 'M2', 'driver': 'fast', 'enabled': True},
         {'name': 'M3', 'driver': 'fast', 'enabled': True},
     ]
-    results = runner.poll(devices, max_workers=1, per_device_timeout=0.2)
+    results = runner.poll(devices, max_workers=1, per_device_timeout=0.15)
 
     by_name = {r.device_name: r for r in results}
     assert not by_name['M1'].ok, 'M1 exceeded its timeout and should be failed'

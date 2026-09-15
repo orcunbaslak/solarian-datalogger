@@ -87,6 +87,21 @@ def poll(devices, max_workers=4, per_device_timeout=None):
     a mixed fleet where the serial devices sit behind their own logger
     process, can use the default.
 
+    `per_device_timeout` bounds *attribution*, not the worker: it decides how
+    long a device may hold a slot before it is recorded as failed and the
+    collector stops waiting on it. It cannot interrupt the read itself, because
+    a thread blocked in a socket read cannot be cancelled from outside.
+
+    Devices still queued are never given up on. They wait for a slot and get
+    their own timeout once they start. An earlier version abandoned the whole
+    remaining queue as soon as one device stalled, and a later one bounded the
+    wait by a budget derived from the timeouts -- but a device that overruns
+    holds its worker for its real duration, so it ate the shared budget and
+    starved the queue anyway. Both cost the devices behind a slow meter on an
+    RS-485 bus, where --workers 1 means everything is behind it. What actually
+    bounds a run is each device's own `timeout` x `retries`, which is what to
+    turn down if a cycle overruns.
+
     `per_device_timeout` (seconds, None to wait indefinitely) bounds how long
     the *caller* waits for one device, not how long the worker lives: a thread
     blocked in a socket read cannot be interrupted from outside. The abandoned
@@ -105,10 +120,6 @@ def poll(devices, max_workers=4, per_device_timeout=None):
     workers = max(1, min(int(max_workers or 1), len(selected)))
     bounded = per_device_timeout is not None and per_device_timeout > 0
     began = time.monotonic()
-    # What the run would cost if every device used its timeout in full: one
-    # timeout per batch of `workers` devices.
-    cycle_budget = (per_device_timeout * -(-len(selected) // workers)
-                    if bounded else None)
 
     results = [None] * len(selected)
     # Written by the workers, read by the collector. A dict item assignment is
@@ -149,24 +160,6 @@ def poll(devices, max_workers=4, per_device_timeout=None):
                     del pending[future]
                     abandoned.append(future)
 
-            # A device that blew its timeout leaves its worker blocked until
-            # the read itself returns, but that read is bounded by the
-            # Session's own timeout and retry budget, so the slot does free up.
-            # The devices still queued have done nothing wrong and deserve
-            # their turn. Abandoning them the moment the first device stalled
-            # meant one slow meter on an RS-485 bus (--workers 1, the
-            # documented serial mode) cost every device behind it for that
-            # cycle. Give up on the remainder only once the whole cycle budget
-            # is gone: the time the run would take if every device used its
-            # timeout in full.
-            if pending and bounded and now - began > cycle_budget:
-                for future, index in list(pending.items()):
-                    future.cancel()
-                    results[index] = _gave_up(
-                        selected[index], 0.0,
-                        'not polled: the %.1fs cycle budget ran out while '
-                        'earlier devices were still blocked' % cycle_budget)
-                pending.clear()
     finally:
         # wait=False on purpose. An abandoned worker is inside a blocking read
         # and joining it here would hand back exactly the delay the timeout
