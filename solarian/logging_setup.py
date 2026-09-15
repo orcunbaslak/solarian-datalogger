@@ -28,6 +28,7 @@ every record raised by a child module, which is most of them.
 import os
 import re
 import logging
+import traceback
 import logging.handlers
 
 from solarian import identity
@@ -182,8 +183,21 @@ class RedactingFilter(logging.Filter):
 
     def filter(self, record):
         record.msg, record.args = _redact_record(record.msg, record.args)
+
+        # Formatter.format() is what normally fills in exc_text, and handler
+        # filters run BEFORE the formatter -- so scrubbing an exc_text that is
+        # still None does nothing, and the first handler to format the record
+        # (the rotating file handler) writes the raw traceback. Rendering it
+        # here means the formatter finds exc_text already populated and reuses
+        # this redacted copy. log.exception() around MQTT is exactly where
+        # broker credentials would otherwise surface.
+        if record.exc_info and not getattr(record, 'exc_text', None):
+            record.exc_text = ''.join(
+                traceback.format_exception(*record.exc_info))
         if getattr(record, 'exc_text', None):
             record.exc_text = _redact_text(record.exc_text)
+        if getattr(record, 'stack_info', None):
+            record.stack_info = _redact_text(record.stack_info)
         return True
 
 

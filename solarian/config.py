@@ -56,6 +56,8 @@ DEFAULT_PORT = 502
 ALLOWED_MQTT_KEYS = frozenset({
     'topic', 'ip_address', 'port', 'username', 'password', 'enabled',
     'tls', 'tls_insecure', 'ca_certs', 'certfile', 'keyfile',
+    # Read by MqttSink to distinguish two loggers publishing from one Pi.
+    'client_id',
 })
 REQUIRED_MQTT_KEYS = ('topic', 'ip_address', 'port', 'enabled')
 MQTT_BOOL_KEYS = ('tls', 'tls_insecure')

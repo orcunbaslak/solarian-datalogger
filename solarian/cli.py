@@ -19,6 +19,8 @@ import signal
 import logging
 import argparse
 
+from datetime import datetime
+
 from solarian import config as config_module
 from solarian import logging_setup, identity, runner, sinks
 from solarian.driver import load as load_driver, available as available_drivers
@@ -98,6 +100,12 @@ def build_parser():
     parser.add_argument('--workers', type=int, default=4, metavar='N',
                         help='devices to poll concurrently. Use 1 for an '
                              'RS-485 bus, where devices share one line. Default: 4')
+    parser.add_argument('--device-timeout', type=float, default=None,
+                        metavar='SECONDS',
+                        help='give up on a device after this long and report '
+                             'it as failed, so one stuck device cannot run a '
+                             'cron cycle past its interval. Off by default; '
+                             'prefer per-device timeout/retries in the config.')
 
     parser.add_argument('--config-dir', default=os.path.join(ROOT, 'config'))
     parser.add_argument('--data-dir', default=os.path.join(ROOT, 'data'))
@@ -201,7 +209,8 @@ def main(argv=None):
                 len(mqtt_servers), len([s for s in mqtt_servers if s.get('enabled')])))
         return EXIT_OK
 
-    results = runner.poll(devices, max_workers=args.workers)
+    results = runner.poll(devices, max_workers=args.workers,
+                          per_device_timeout=args.device_timeout)
     values = runner.readings(results)
 
     if args.host_metrics:
@@ -219,7 +228,9 @@ def main(argv=None):
     context = {
         'device_serial': serial,
         'config_name': config_name,
-        'timestamp': time.time(),
+        # A datetime, not time.time(): _file_stamp takes a datetime or a
+        # string, and a float fell through to its warning path on every run.
+        'timestamp': datetime.now(),
     }
 
     active = []

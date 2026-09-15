@@ -335,6 +335,9 @@ def _file_stamp(context):
     value = (context or {}).get('timestamp')
     if isinstance(value, datetime):
         return value.strftime(FILENAME_STAMP)
+    # A POSIX timestamp, as time.time() produces.
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return datetime.fromtimestamp(value).strftime(FILENAME_STAMP)
     if isinstance(value, str) and value:
         if len(value) == 12 and value.isdigit():
             return value

@@ -177,14 +177,16 @@ Any device may override the transport tuning. Settings resolve in the order
   --mqtt               publish over MQTT; needs config/mqtt.yml
   --graylog            send logs to Graylog; needs config/graylog.yml
   --workers N          devices polled in parallel. Default: 4
+  --device-timeout S   give up on a stuck device after S seconds
   --check-config       validate configuration and exit
   --list-drivers       list available drivers and exit
   --register-map NAME  print a driver's register map as JSON and exit
 ```
 
-**Use `--workers 1` for an RS-485 bus.** Devices on one serial line share a single
-physical medium and must be polled one at a time. TCP devices are independent and
-benefit from the default.
+Devices sharing one `serial_port` are automatically serialised against each other —
+an RS-485 bus is a single pair of wires and its transactions must not interleave —
+while TCP devices poll in parallel. `--workers 1` forces strictly sequential polling
+for the whole fleet if you want it.
 
 Exit codes: `0` all devices read, `1` some device failed, `2` configuration rejected,
 `130` interrupted.
