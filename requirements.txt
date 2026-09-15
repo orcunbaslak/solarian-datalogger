@@ -1,6 +1,13 @@
-setuptools
-pyyaml
-modbus_tk
-paho-mqtt
-psutil
-influxdb
+# Runtime dependencies.
+#
+# Lower bounds are the versions this was developed and verified against on
+# Python 3.13. Upper bounds guard against the next major release: paho-mqtt 2.0
+# was a breaking change, so an unpinned install of this file in 2020 would not
+# reinstall cleanly today.
+
+PyYAML>=6.0,<7
+modbus_tk>=1.1.3,<2
+pyserial>=3.5,<4          # Modbus RTU transport; also a modbus_tk dependency
+paho-mqtt>=2.0,<3
+psutil>=5.9
+graypy>=2.1,<3            # optional, only imported when --graylog is used

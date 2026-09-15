@@ -1,3 +1,10 @@
+# Remote logging target, used when --graylog is passed.
+#
+# Copy to graylog.yml and edit. graylog.yml is gitignored.
+#
+# Records sent here pass through the same redaction filter as the local log
+# file, so credentials are not shipped off the box.
+
 server:
-    - server_address : logger.server.com
-      port : 12205
+  - server_address: logger.example.com
+    port: 12205

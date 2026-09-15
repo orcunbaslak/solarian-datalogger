@@ -1,15 +1,60 @@
+# Device inventory.
+#
+# Copy to config.yml and edit. config.yml is gitignored so site details and
+# addresses never reach the repository.
+#
+# Required for every device: name, driver, enabled, measurement, slave_id.
+# A device must be reachable either over TCP (ip_address, port) or over a
+# serial line (serial_port) - never neither. Unknown keys are rejected at
+# startup rather than ignored, so a typo fails loudly instead of silently
+# dropping a device from the poll.
+
 devices:
-    - name : INVERTER_1
-      driver: inv_abb_pvs980 #Name of the driver file without .py extension
-      enabled : yes #yes/no to enable/disable the device
-      measurement: SPP_1  # InfluxDB Measurement (Table) Name Suffix
-      slave_id : 1     # this is the slave address number
-      ip_address : 192.168.1.2   # IPv4 destination address
-      port : 502  # destination port
-    - name : INVERTER_2
-      driver: inv_abb_pvs800
-      enabled : no
-      measurement: SPP_1  
-      slave_id : 1     
-      ip_address : 192.168.1.3 
-      port : 502
+
+  # --- Modbus TCP inverter -------------------------------------------------
+  - name: INVERTER_1
+    driver: inv_abb_pvs980      # module name in solarian/drivers, no .py
+    enabled: yes
+    measurement: SPP_1          # InfluxDB measurement suffix
+    slave_id: 1
+    ip_address: 192.168.1.2
+    port: 502
+
+  - name: INVERTER_2
+    driver: inv_abb_pvs800
+    enabled: no
+    measurement: SPP_1
+    slave_id: 1
+    ip_address: 192.168.1.3
+    port: 502
+
+  # --- A device that answers slowly ---------------------------------------
+  # Any of timeout, retries, backoff and max_backoff may be set per device.
+  # They override the driver's defaults, which override the framework's.
+  - name: METER_SLOW
+    driver: ekk_schneider_ion_7650
+    enabled: no
+    measurement: SPP_1
+    slave_id: 3
+    ip_address: 192.168.1.4
+    port: 502
+    timeout: 8.0
+    retries: 5
+    backoff: 1.0
+    max_backoff: 10.0
+
+  # --- Modbus RTU over a serial line --------------------------------------
+  # Declaring serial_port selects the RTU transport. Previously this was
+  # impossible to express: the driver signature only carried an IP address and
+  # port, so the serial device hardcoded /dev/ttyUSB0 at 19200 8N1 and there
+  # could only ever be one of them.
+  - name: METER_RS485
+    driver: ekk_socomec_dirisa10
+    enabled: no
+    measurement: SPP_1
+    slave_id: 5
+    serial_port: /dev/ttyUSB0
+    baudrate: 19200
+    bytesize: 8
+    parity: N
+    stopbits: 1

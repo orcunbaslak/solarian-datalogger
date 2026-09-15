@@ -1,7 +1,22 @@
+# MQTT destinations.
+#
+# Copy to mqtt.yml and edit. mqtt.yml is gitignored - do not commit credentials.
+#
+# TLS is verified by default: the broker's certificate chain AND its hostname
+# are checked. The previous implementation passed a bare ssl.SSLContext, which
+# disables both, so the connection was encrypted but unauthenticated and the
+# username and password below could be harvested by anyone able to intercept it.
+
 servers:
-    - topic : SolarianMQTT
-      ip_address : 10.0.0.1
-      port : 1234
-      username : osman
-      password: osmanmustprevail
-      enabled : yes
+  - topic: SolarianMQTT
+    ip_address: mqtt.example.com   # must match the certificate's hostname
+    port: 8883
+    username: solarian
+    password: CHANGE_ME
+    enabled: yes
+    # tls: true                    # default. Set false only on a trusted LAN.
+    # ca_certs: /etc/ssl/certs/my-broker-ca.pem   # private or self-signed CA
+    # certfile: /etc/solarian/client.crt          # for client certificate auth
+    # keyfile:  /etc/solarian/client.key
+    # tls_insecure: true           # skips verification entirely. Logs a
+    #                              # warning on every run. Avoid.

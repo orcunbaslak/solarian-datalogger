@@ -1,0 +1,43 @@
+name: tests
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3.9 is what a Raspberry Pi OS bullseye image ships; 3.13 is current.
+        python-version: ['3.9', '3.11', '3.13']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Run tests
+        run: python -m pytest -q
+
+      - name: Check every driver's register map loads
+        # Catches an out-of-range field offset or a malformed block in a driver
+        # that no test happens to sample.
+        run: |
+          python - <<'PY'
+          from solarian.driver import available, load
+          for name in available():
+              driver = load(name)
+              blocks = len(driver.register_map()['blocks'])
+              print('%-34s %-28s %d block(s)' % (name, driver.version_string(), blocks))
+          PY
