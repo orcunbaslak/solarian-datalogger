@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "solarian-datalogger"
+version = "2.0.0"
+description = "A datalogging software for solar systems using various drivers"
+readme = "README.md"
+license = "GPL-3.0-or-later"
+authors = [{ name = "Orçun Başlak" }]
+# 3.13 only. Declaring it here means pip refuses to install on an older
+# interpreter rather than failing later at an unexpected place.
+requires-python = ">=3.13"
+# Read from requirements.txt so there is one source of truth; see below.
+dynamic = ["dependencies"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+solarian-datalogger = "solarian.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/orcunbaslak/solarian-datalogger"
+Issues = "https://github.com/orcunbaslak/solarian-datalogger/issues"
+
+# Explicit, because flat-layout auto-discovery would also try to package tests/.
+[tool.setuptools]
+packages = ["solarian", "solarian.drivers"]
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = [".", "tests"]
+filterwarnings = ["error::DeprecationWarning:solarian.*"]

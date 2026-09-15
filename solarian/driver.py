@@ -55,7 +55,15 @@ class Block:
         self._check()
 
     def _check(self):
-        """Catch register maps that read past the end of their own block."""
+        """Reject register maps that cannot be right.
+
+        Offsets past the end of the block, bit positions outside a 16-bit
+        register, and two fields emitting the same name. That last one matters
+        because emitting is a dict assignment: a duplicate silently overwrites
+        the earlier series, losing data with no error anywhere. Several drivers
+        deliberately reuse a Bitfield prefix across status words and rely on
+        the bit names not colliding, which is a comment today and a check now.
+        """
         if self.count < 1:
             raise ValueError('block %s: count must be positive' % self.name)
         for field in self.fields:
@@ -68,6 +76,23 @@ class Block:
                         'block %s: field %r reads offset %d but the block is '
                         'only %d registers long'
                         % (self.name, field.name, position, self.count))
+            for bit in getattr(field, 'bits', ()) or ():
+                if not 0 <= bit <= 15:
+                    raise ValueError(
+                        'block %s: field %r maps bit %d, but a Modbus register '
+                        'is 16 bits, so it would always read 0'
+                        % (self.name, field.name, bit))
+
+    def emitted_names(self):
+        """Every field name this block writes, in order, bitfields expanded."""
+        names = []
+        for field in self.fields:
+            bits = getattr(field, 'bits', None)
+            if bits:
+                names.extend(field.prefix + bits[b] for b in sorted(bits))
+            else:
+                names.append(field.name)
+        return names
 
     def __repr__(self):
         return '<Block %s %s@%d+%d, %d fields>' % (
@@ -96,6 +121,21 @@ class Driver:
         names = [b.name for b in self.blocks]
         if len(names) != len(set(names)):
             raise ValueError('%s: duplicate block names %s' % (name, names))
+
+        # Across blocks too: inv_abb_pvs980 shares one Bitfield prefix between
+        # two status words in different blocks, so a within-block check alone
+        # would miss the collision.
+        seen, clashes = set(), []
+        for block in self.blocks:
+            for emitted in block.emitted_names():
+                if emitted in seen:
+                    clashes.append(emitted)
+                seen.add(emitted)
+        if clashes:
+            raise ValueError(
+                '%s: these field names are emitted more than once, so the '
+                'later value would silently overwrite the earlier one: %s'
+                % (name, ', '.join(sorted(set(clashes)))))
 
     # -- sampling ------------------------------------------------------------
 

@@ -156,14 +156,19 @@ def main(argv=None):
     config_file = _resolve(args.config, args.config_dir)
     config_name = os.path.splitext(os.path.basename(config_file))[0]
 
+    # A broken optional config must never cost the primary data write. Only
+    # the device inventory is fatal, because without it there is nothing to do.
+    config_problem = False
+
     graylog_settings = None
     if args.graylog:
         try:
             graylog_settings = config_module.load_graylog(
                 _resolve('graylog.yml', args.config_dir))
         except config_module.ConfigError as exc:
-            print('graylog configuration: %s' % exc, file=sys.stderr)
-            return EXIT_CONFIG
+            config_problem = True
+            print('graylog configuration rejected, continuing without remote '
+                  'logging: %s' % exc, file=sys.stderr)
 
     logging_setup.configure(
         level=args.log,
@@ -190,9 +195,15 @@ def main(argv=None):
             mqtt_servers = config_module.load_mqtt(
                 _resolve('mqtt.yml', args.config_dir))
         except config_module.ConfigError as exc:
-            log.error('mqtt configuration rejected: %s', exc)
-            print('mqtt configuration rejected: %s' % exc, file=sys.stderr)
-            return EXIT_CONFIG
+            # Previously this returned before runner.poll, so an unquoted
+            # password in mqtt.yml meant no device was polled and no local file
+            # was written -- a whole plant recording nothing, every minute,
+            # because of a typo in an optional sink's config.
+            config_problem = True
+            log.error('mqtt configuration rejected, continuing without MQTT: %s',
+                      exc)
+            print('mqtt configuration rejected, continuing without MQTT: %s'
+                  % exc, file=sys.stderr)
 
     if args.check_config:
         enabled = [d for d in devices if d.get('enabled')]
@@ -233,14 +244,25 @@ def main(argv=None):
         'timestamp': datetime.now(),
     }
 
-    active = []
+    # Construction is guarded too, not just emit: JsonFileSink's __init__ calls
+    # makedirs and stat, so a read-only SD card used to escape main() as an
+    # unhandled traceback and take the MQTT copy down with it.
+    wanted = []
     if args.verbose:
-        active.append(sinks.ConsoleSink())
+        wanted.append(('console', lambda: sinks.ConsoleSink()))
     if not args.write_disabled:
-        active.append(sinks.JsonFileSink(args.data_dir, args.temp_dir,
-                                         serial, config_name))
+        wanted.append(('file', lambda: sinks.JsonFileSink(
+            args.data_dir, args.temp_dir, serial, config_name)))
     if mqtt_servers:
-        active.append(sinks.MqttSink(mqtt_servers, serial))
+        wanted.append(('mqtt', lambda: sinks.MqttSink(mqtt_servers, serial)))
+
+    active = []
+    for label, build in wanted:
+        try:
+            active.append(build())
+        except Exception:
+            log.exception('could not start the %s sink; continuing without it',
+                          label)
 
     for sink in active:
         try:
@@ -256,6 +278,9 @@ def main(argv=None):
     failed = [r for r in results if not r.ok]
     log.info('=== datalogger finished in %.4fs: %d ok, %d failed ===',
              time.time() - start_time, len(results) - len(failed), len(failed))
+    # Report the bad optional config, but only after the readings are written.
+    if config_problem:
+        return EXIT_CONFIG
     return EXIT_PARTIAL if failed else EXIT_OK
 
 

@@ -230,11 +230,20 @@ class Session:
         Raises DeviceError once the budget is spent, so a partial or short read
         can never be mistaken for a real measurement.
         """
-        master = self.open()
         problem = None
 
         for attempt in range(self.retries):
             try:
+                # Re-opened each attempt on purpose. modbus_tk's Master.open()
+                # is a no-op while _is_opened is True, and only close() clears
+                # that flag -- nothing does so on an I/O error. So without the
+                # close() below, a gateway that resets an idle connection would
+                # make attempts 2..N fail on the same dead socket, and they
+                # could even parse stale bytes. The hand-written drivers closed
+                # in a finally after every attempt and recovered on attempt 2;
+                # for a device with retries=10 this is the difference between
+                # recovering and burning the whole budget plus its backoff.
+                master = self.open()
                 registers = self._execute(master, function, address, count)
             except Exception as exc:
                 problem = exc
@@ -250,6 +259,8 @@ class Session:
                         self.name, self.endpoint, block_name,
                         attempt + 1, self.retries, problem)
             if attempt + 1 < self.retries:
+                # Drop the transport so the next attempt genuinely reconnects.
+                self.close()
                 time.sleep(self._backoff_delay(attempt))
 
         raise DeviceError('block could not be read: %s' % problem,

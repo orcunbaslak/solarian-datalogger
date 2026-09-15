@@ -58,7 +58,8 @@ Here's why:
 
 ### Built With
 
-* [Python 3](https://www.python.org/) (developed and tested on 3.13)
+* [Python 3.13 or newer](https://www.python.org/) — required, and enforced by
+  `requires-python` in `pyproject.toml`
 * [modbus-tk](https://github.com/ljean/modbus-tk) — TCP and RTU transport
 * [PyYAML](https://github.com/yaml/pyyaml) — configuration
 * [Paho MQTT](https://github.com/eclipse/paho.mqtt.python) — publishing
@@ -95,9 +96,14 @@ and reporting failure are the framework's job, in one place, configurable per de
 
 ### Prerequisites
 
+**Python 3.13 or newer.** Older interpreters are not supported and pip will refuse
+to install on them. Raspberry Pi OS images older than trixie ship an earlier
+Python, so use a current image or a pyenv build.
+
 ```sh
 sudo apt update
 sudo apt-get -y install git python3-venv python3-dev gcc
+python3 --version   # must be 3.13 or newer
 ```
 
 ### Installation
@@ -257,7 +263,7 @@ changed.
 ## Testing
 
 ```sh
-.venv/bin/pip install -r requirements-dev.txt
+.venv/bin/pip install -e ".[dev]"
 .venv/bin/python -m pytest
 ```
 

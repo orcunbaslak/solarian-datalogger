@@ -43,7 +43,20 @@ REQUIRED_DEVICE_KEYS = ('name', 'driver', 'enabled', 'measurement', 'slave_id')
 
 # Optional keys that override solarian.modbus.DEFAULTS per device; keep this
 # list in step with that mapping.
-DEVICE_INT_KEYS = ('slave_id', 'port', 'baudrate', 'bytesize', 'stopbits', 'xonxoff')
+# Range, not just type. A validator that accepts port: 0 or slave_id: -1 is not
+# doing the job it exists for -- port: 0 used to survive validation and then be
+# silently replaced by 502 at connect time, so the log said 1.2.3.4:0 while the
+# socket went somewhere else. slave_id 0 is the Modbus broadcast address: it is
+# write-only and never answers a read.
+DEVICE_INT_RANGES = {
+    'slave_id': (1, 247),      # 248-255 are reserved by the Modbus spec
+    'port': (1, 65535),
+    'baudrate': (50, 4000000),
+    'bytesize': (5, 8),
+    'stopbits': (1, 2),
+    'xonxoff': (0, 1),
+}
+DEVICE_INT_KEYS = tuple(DEVICE_INT_RANGES)
 
 # Float key -> whether zero is meaningful. A zero backoff means "retry at once",
 # which is a choice; a zero timeout would make every single read fail.
@@ -133,7 +146,7 @@ def _check_keys(where, entry, allowed, required):
                           % (where, ', '.join(repr(k) for k in missing)))
 
 
-def _check_int(where, entry, key, minimum=None):
+def _check_int(where, entry, key, minimum=None, maximum=None):
     """Require a real int. YAML quotes turn 502 into '502', which pymodbus
     would only complain about much later, at connect time."""
     if key not in entry:
@@ -147,6 +160,8 @@ def _check_int(where, entry, key, minimum=None):
               % (value, type(value).__name__))
     if minimum is not None and value < minimum:
         _fail(where, key, 'must be %d or greater, found %d' % (minimum, value))
+    if maximum is not None and value > maximum:
+        _fail(where, key, 'must be %d or less, found %d' % (maximum, value))
     return value
 
 
@@ -204,8 +219,8 @@ def load_devices(path):
             text = _check_text(where, entry, key)
             if text is not None:
                 device[key] = text
-        for key in DEVICE_INT_KEYS:
-            _check_int(where, entry, key)
+        for key, (low, high) in DEVICE_INT_RANGES.items():
+            _check_int(where, entry, key, minimum=low, maximum=high)
         for key, zero_allowed in DEVICE_FLOAT_KEYS.items():
             value = _check_float(where, entry, key, zero_allowed)
             if value is not None:

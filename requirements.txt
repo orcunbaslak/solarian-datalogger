@@ -1,13 +1,16 @@
-# Runtime dependencies.
+# Runtime dependencies. This file is the single source of truth: pyproject.toml
+# reads it via [tool.setuptools.dynamic], so the two cannot drift apart.
 #
-# Lower bounds are the versions this was developed and verified against on
+# Lower bounds are the newest published release of each package, verified on
 # Python 3.13. Upper bounds guard against the next major release: paho-mqtt 2.0
-# was a breaking change, so an unpinned install of this file in 2020 would not
-# reinstall cleanly today.
+# was a breaking change, so the original unpinned file would not reinstall
+# cleanly today.
 
-PyYAML>=6.0,<7
-modbus_tk>=1.1.3,<2
-pyserial>=3.5,<4          # Modbus RTU transport; also a modbus_tk dependency
-paho-mqtt>=2.0,<3
-psutil>=5.9
-graypy>=2.1,<3            # optional, only imported when --graylog is used
+PyYAML>=6.0.3,<7
+modbus_tk>=1.1.5,<2
+# Modbus RTU transport; also a modbus_tk dependency.
+pyserial>=3.5,<4
+paho-mqtt>=2.1,<3
+psutil>=7.2,<8
+# Optional: only imported when --graylog is used.
+graypy>=2.1,<3

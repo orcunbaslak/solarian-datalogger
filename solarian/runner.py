@@ -26,8 +26,6 @@ up because two inverters swapped places), and a device's failure is recorded
 rather than propagated.
 """
 
-from __future__ import annotations
-
 import time
 import logging
 
@@ -107,6 +105,10 @@ def poll(devices, max_workers=4, per_device_timeout=None):
     workers = max(1, min(int(max_workers or 1), len(selected)))
     bounded = per_device_timeout is not None and per_device_timeout > 0
     began = time.monotonic()
+    # What the run would cost if every device used its timeout in full: one
+    # timeout per batch of `workers` devices.
+    cycle_budget = (per_device_timeout * -(-len(selected) // workers)
+                    if bounded else None)
 
     results = [None] * len(selected)
     # Written by the workers, read by the collector. A dict item assignment is
@@ -147,16 +149,23 @@ def poll(devices, max_workers=4, per_device_timeout=None):
                     del pending[future]
                     abandoned.append(future)
 
-            if pending and bounded and _stalled(pending, started, abandoned, workers):
-                # Every worker is stuck on a device we already gave up on, so
-                # nothing still queued will ever start. Say so instead of
-                # waiting out a run that cannot make progress.
+            # A device that blew its timeout leaves its worker blocked until
+            # the read itself returns, but that read is bounded by the
+            # Session's own timeout and retry budget, so the slot does free up.
+            # The devices still queued have done nothing wrong and deserve
+            # their turn. Abandoning them the moment the first device stalled
+            # meant one slow meter on an RS-485 bus (--workers 1, the
+            # documented serial mode) cost every device behind it for that
+            # cycle. Give up on the remainder only once the whole cycle budget
+            # is gone: the time the run would take if every device used its
+            # timeout in full.
+            if pending and bounded and now - began > cycle_budget:
                 for future, index in list(pending.items()):
                     future.cancel()
                     results[index] = _gave_up(
                         selected[index], 0.0,
-                        'not polled: every worker was still blocked on a device '
-                        'that exceeded its %.1fs timeout' % per_device_timeout)
+                        'not polled: the %.1fs cycle budget ran out while '
+                        'earlier devices were still blocked' % cycle_budget)
                 pending.clear()
     finally:
         # wait=False on purpose. An abandoned worker is inside a blocking read
@@ -223,14 +232,3 @@ def _gave_up(device, duration, message):
     name = device.get('name', '<unnamed>')
     log.error('%s (%s): %s', name, device.get('driver'), message)
     return Result(name, device.get('driver'), None, TimeoutError(message), duration)
-
-
-def _stalled(pending, started, abandoned, workers):
-    """True when no pending device can ever start.
-
-    That happens only when every worker slot is held by a device that already
-    blew its timeout and none of the devices still queued has begun.
-    """
-    if any(started.get(index) is not None for index in pending.values()):
-        return False
-    return sum(1 for future in abandoned if not future.done()) >= workers
