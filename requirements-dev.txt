@@ -1,0 +1,9 @@
+# Development dependencies.
+#
+# Equivalent to `pip install -e ".[dev]"`, kept for anyone who prefers a
+# requirements file. Runtime pins live in requirements.txt, which pyproject.toml
+# reads directly.
+
+-r requirements.txt
+
+pytest>=8
