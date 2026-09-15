@@ -4,9 +4,6 @@
 Each test fails against that commit.
 """
 
-import time
-import logging
-
 import pytest
 
 from solarian import modbus as sol_modbus
@@ -99,49 +96,11 @@ def test_a_broken_mqtt_config_still_polls_and_writes(tmp_path, monkeypatch):
     assert code == cli.EXIT_CONFIG, 'the problem should still be reported'
 
 
-# --- 3. queued devices deserve their turn -----------------------------------
-
-class _SlowDriver:
-    name, version = 'slow', '1'
-
-    def __init__(self, delay):
-        self.delay = delay
-
-    def read(self, device):
-        time.sleep(self.delay)
-        return {'Device_Name': device['name']}
-
-    def version_string(self):
-        return 'slow v1'
-
-
-def test_one_slow_device_does_not_fail_the_queue_behind_it(monkeypatch):
-    """--workers 1 is the documented RS-485 mode; one slow meter cost the rest.
-
-    M1 overruns its timeout, but M2 and M3 are instant and run as soon as the
-    slot frees. They used to be failed immediately as 'not polled'.
-
-    There is deliberately no deadline racing M2 and M3 here: a device that
-    overruns holds its worker for its real duration, so any budget derived from
-    the timeouts would be eaten by M1 and this test would be a coin flip.
-    """
-    def fake_load(name):
-        # M1 holds the single worker for 0.5s, well past its 0.15s timeout.
-        return _SlowDriver(0.5 if name == 'slow_one' else 0.0)
-
-    monkeypatch.setattr(runner.driver_registry, 'load', fake_load)
-
-    devices = [
-        {'name': 'M1', 'driver': 'slow_one', 'enabled': True},
-        {'name': 'M2', 'driver': 'fast', 'enabled': True},
-        {'name': 'M3', 'driver': 'fast', 'enabled': True},
-    ]
-    results = runner.poll(devices, max_workers=1, per_device_timeout=0.15)
-
-    by_name = {r.device_name: r for r in results}
-    assert not by_name['M1'].ok, 'M1 exceeded its timeout and should be failed'
-    assert by_name['M2'].ok, 'M2 was abandoned though a slot freed up for it'
-    assert by_name['M3'].ok, 'M3 was abandoned though a slot freed up for it'
+# Note: the regression for finding 3 -- queued devices being abandoned as
+# soon as one device stalled -- was removed at the repo owner's request
+# because it depended on sleeps. The fix itself is still in
+# solarian/runner.py; poll()'s docstring explains why the queue is never
+# given up on. Nothing guards against that behaviour returning.
 
 
 # --- 4. sink construction is guarded ----------------------------------------
