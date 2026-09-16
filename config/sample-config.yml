@@ -8,6 +8,11 @@
 # serial line (serial_port) - never neither. Unknown keys are rejected at
 # startup rather than ignored, so a typo fails loudly instead of silently
 # dropping a device from the poll.
+#
+# A few drivers need a setting of their own - see TRACKERS_1 below. Those are
+# declared by the driver, listed by --register-map, and checked here at startup
+# like every other key; naming one on a driver that does not declare it is an
+# error, not a shrug.
 
 devices:
 
@@ -58,3 +63,20 @@ devices:
     bytesize: 8
     parity: N
     stopbits: 1
+
+  # --- A driver that needs a setting of its own ----------------------------
+  # A tracker sub-array controller is one Modbus slave fronting however many
+  # tracker nodes were installed, so its register map is not fixed: the driver
+  # builds it from tracker_count. Set this to the number your controller
+  # actually owns. Too high and the controller rejects the read past its last
+  # tracker, failing the whole device; too low and the trackers past it are
+  # never polled. The controller's own Start_Address and End_Address are
+  # logged so a disagreement shows up in the data rather than staying silent.
+  - name: TRACKERS_1
+    driver: trk_eset_subarray
+    enabled: no
+    measurement: SPP_1
+    slave_id: 1
+    ip_address: 192.168.1.10
+    port: 502
+    tracker_count: 24           # 1..181, required by this driver

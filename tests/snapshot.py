@@ -33,6 +33,7 @@ DRIVERS = [
     "sensor_kippzonen_smp11",
     "sensor_lufft_ws600",
     "sensor_sevensolar_3SISTMB",
+    "trk_eset_subarray",
 ]
 
 ISO_MINUTE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:00Z$")
@@ -61,10 +62,19 @@ SERIAL_DEVICES = {
     },
 }
 
+# Options required by a parametric driver, whose register map is a function of
+# them. Three trackers rather than one: it pins the repeat, and rather than 181
+# because the snapshot should stay readable. Block packing at its boundaries is
+# tested directly in test_drivers_parametric.py.
+DRIVER_OPTIONS = {
+    "trk_eset_subarray": {"tracker_count": 3},
+}
+
 
 def device_for(name):
     device = dict(DEVICE, driver=name)
     device.update(SERIAL_DEVICES.get(name, {}))
+    device.update(DRIVER_OPTIONS.get(name, {}))
     return device
 
 

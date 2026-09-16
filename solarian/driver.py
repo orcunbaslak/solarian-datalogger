@@ -17,6 +17,15 @@ not express a serial device, so the one RTU driver in the tree ignored
 the unused IP. Drivers now receive the device's configuration mapping, which
 can grow a field without breaking every other driver. Modules written against
 the old contract still load, through LegacyDriver below.
+
+Most register maps are fixed, and most drivers declare one as a plain list of
+Blocks. Some devices are not fixed: a tracker sub-array controller fronts
+however many tracker nodes were installed, and its map is the same fifteen
+registers repeated that many times. Such a driver declares an `options` list
+describing the settings it needs from the configuration, and passes a callable
+for `blocks` that builds the map from them. config.py folds those option names
+into its allow-list, so they are validated at startup alongside every other
+key rather than being read out of an untyped bag at poll time.
 """
 
 import logging
@@ -33,6 +42,13 @@ log = logging.getLogger('solarian.driver')
 # Where drivers are looked up, in order. The second entry keeps drivers that
 # users dropped into a top-level drivers/ package working.
 SEARCH_PACKAGES = ('solarian.drivers', 'drivers')
+
+# A single Modbus request cannot ask for an unlimited span: the quantity field
+# of FC 0x03/0x04 caps at 0x7D registers, and FC 0x01/0x02 at 0x7D0 bits. A
+# block over the ceiling is a map that can never be read, and saying so at
+# import time beats an exception response at 3am.
+MAX_REGISTERS_PER_READ = 125
+MAX_BITS_PER_READ = 2000
 
 
 def utc_minute():
@@ -66,6 +82,17 @@ class Block:
         """
         if self.count < 1:
             raise ValueError('block %s: count must be positive' % self.name)
+        if self.function in (modbus.COILS, modbus.DISCRETE):
+            ceiling, unit = MAX_BITS_PER_READ, 'bits'
+        else:
+            ceiling, unit = MAX_REGISTERS_PER_READ, 'registers'
+        if self.count > ceiling:
+            raise ValueError(
+                'block %s: asks for %d %s, but one %s request can return at '
+                'most %d; split it into several blocks'
+                % (self.name, self.count, unit,
+                   modbus.FUNCTION_NAMES.get(self.function, self.function),
+                   ceiling))
         for field in self.fields:
             for attr in ('offset', 'high', 'low'):
                 position = getattr(field, attr, None)
@@ -100,6 +127,81 @@ class Block:
             self.address, self.count, len(self.fields))
 
 
+class OptionError(Exception):
+    """A driver option is missing or out of range.
+
+    Carries only what is wrong with the value; the caller adds the file, the
+    device and the key, because it knows them and this does not.
+    """
+
+
+class IntOption:
+    """A whole-number setting a driver needs from the device configuration.
+
+    Declared by the driver, validated by config.py at startup and again by the
+    driver at use, so a value can reach a register map neither unchecked nor
+    twice-checked by two different sets of rules.
+
+    A range, not just a type, for the reason DEVICE_INT_RANGES gives in
+    config.py: a validator that accepts tracker_count: 0 is not doing the job
+    it exists for. Leaving `default` unset makes the option required, which is
+    right whenever guessing would be worse than refusing to start -- how many
+    trackers a controller fronts is not something to assume.
+
+    `example` is the value --register-map assumes when no device is at hand.
+    """
+
+    __slots__ = ('name', 'minimum', 'maximum', 'default', 'example', 'help')
+
+    def __init__(self, name, minimum, maximum, default=None, example=None,
+                 help=None):
+        if minimum > maximum:
+            raise ValueError('option %s: minimum %d exceeds maximum %d'
+                             % (name, minimum, maximum))
+        self.name = name
+        self.minimum = minimum
+        self.maximum = maximum
+        self.default = default
+        self.example = example if example is not None else (
+            default if default is not None else minimum)
+        self.help = help
+        for label, value in (('default', default), ('example', self.example)):
+            if value is not None and not minimum <= value <= maximum:
+                raise ValueError('option %s: %s %d is outside its own range '
+                                 '%d..%d' % (name, label, value, minimum, maximum))
+
+    @property
+    def required(self):
+        return self.default is None
+
+    def validate(self, value):
+        """The value to use, or OptionError saying why there isn't one."""
+        if value is None:
+            if self.default is None:
+                raise OptionError('required by this driver, but not set')
+            return self.default
+        # bool is an int subclass, and `tracker_count: yes` is a mistake worth
+        # naming rather than silently reading as 1.
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise OptionError('must be an integer, found %r (%s)'
+                              % (value, type(value).__name__))
+        if not self.minimum <= value <= self.maximum:
+            raise OptionError('must be between %d and %d, found %d'
+                              % (self.minimum, self.maximum, value))
+        return value
+
+    def describe(self):
+        return {'name': self.name, 'kind': 'int',
+                'minimum': self.minimum, 'maximum': self.maximum,
+                'required': self.required, 'default': self.default,
+                'help': self.help}
+
+    def __repr__(self):
+        return '<IntOption %s %d..%d%s>' % (
+            self.name, self.minimum, self.maximum,
+            '' if self.required else ' default=%d' % self.default)
+
+
 class Driver:
     """A device's register map plus the metadata the logger needs.
 
@@ -108,25 +210,64 @@ class Driver:
     `postprocess(values, blocks, device)` is the escape hatch for the handful
     of quirks that a declarative map cannot express, such as clamping a sensor
     that reports negative irradiation at night.
+
+    `blocks` is normally a list. A device whose map depends on how it was
+    installed passes a callable instead, together with the `options` it needs:
+
+        Driver(name=..., version=...,
+               options=[IntOption('tracker_count', 1, 181)],
+               blocks=lambda options: [...])
+
+    The callable receives the validated options and nothing else, so the same
+    options always produce the same map -- which is what makes caching them
+    safe. `blocks` for such a driver holds the map for the options' `example`
+    values, so --register-map, field_count and repr still describe something
+    real; read() always rebuilds from the device at hand.
     """
 
     def __init__(self, name, version, blocks, defaults=None, postprocess=None,
-                 description=None):
+                 description=None, options=()):
         self.name = name
         self.version = version
-        self.blocks = list(blocks)
         self.defaults = dict(defaults or {})
         self.postprocess = postprocess
         self.description = description
-        names = [b.name for b in self.blocks]
+        self.options = tuple(options)
+
+        option_names = [o.name for o in self.options]
+        if len(option_names) != len(set(option_names)):
+            raise ValueError('%s: duplicate option names %s' % (name, option_names))
+
+        if callable(blocks):
+            self._build = blocks
+            # Keyed by the option values, never by the device: two devices with
+            # the same options share a map, and a device cannot poison another's.
+            # Races are benign -- two threads may build the same list and one
+            # wins -- so this stays lock-free, as runner.py polls in parallel.
+            self._cache = {}
+            self.blocks = self.blocks_for(
+                {o.name: o.example for o in self.options})
+        else:
+            self._build = None
+            self._cache = None
+            self.blocks = self._validated(list(blocks))
+
+    @property
+    def parametric(self):
+        """True when the register map is built from the device configuration."""
+        return self._build is not None
+
+    def _validated(self, blocks):
+        """Reject a map that would lose data, whoever assembled it."""
+        names = [b.name for b in blocks]
         if len(names) != len(set(names)):
-            raise ValueError('%s: duplicate block names %s' % (name, names))
+            raise ValueError('%s: duplicate block names %s' % (self.name, names))
 
         # Across blocks too: inv_abb_pvs980 shares one Bitfield prefix between
         # two status words in different blocks, so a within-block check alone
         # would miss the collision.
         seen, clashes = set(), []
-        for block in self.blocks:
+        for block in blocks:
             for emitted in block.emitted_names():
                 if emitted in seen:
                     clashes.append(emitted)
@@ -135,7 +276,38 @@ class Driver:
             raise ValueError(
                 '%s: these field names are emitted more than once, so the '
                 'later value would silently overwrite the earlier one: %s'
-                % (name, ', '.join(sorted(set(clashes)))))
+                % (self.name, ', '.join(sorted(set(clashes)))))
+        return blocks
+
+    # -- options -------------------------------------------------------------
+
+    def resolve_options(self, device):
+        """This driver's options for one device, validated and defaulted.
+
+        config.py has normally checked these already and said so in terms of
+        the file and the device. This runs anyway, because read() is also
+        reachable from tests and scripts that never went through config.py,
+        and a register map built from an unchecked number is worth nothing.
+        """
+        resolved = {}
+        for option in self.options:
+            try:
+                resolved[option.name] = option.validate(device.get(option.name))
+            except OptionError as exc:
+                raise OptionError('%s: %s: %s' % (self.name, option.name, exc)) from exc
+        return resolved
+
+    def blocks_for(self, device):
+        """The register map to read for one device's configuration."""
+        if self._build is None:
+            return self.blocks
+        options = self.resolve_options(device)
+        key = tuple(sorted(options.items()))
+        built = self._cache.get(key)
+        if built is None:
+            built = self._validated(list(self._build(options)))
+            self._cache[key] = built
+        return built
 
     # -- sampling ------------------------------------------------------------
 
@@ -149,10 +321,11 @@ class Driver:
         values['Measurement_Suffix'] = device.get('measurement')
         values['Date'] = utc_minute()
 
+        declared = self.blocks_for(device)
         with modbus.Session(device, self.defaults, self.name) as session:
-            blocks = session.read_blocks(self.blocks)
+            blocks = session.read_blocks(declared)
 
-        for block in self.blocks:
+        for block in declared:
             decode_block(blocks[block.name], block.fields, values)
 
         if self.postprocess is not None:
@@ -163,15 +336,26 @@ class Driver:
 
     @property
     def field_count(self):
+        return self.count_fields(self.blocks)
+
+    @staticmethod
+    def count_fields(blocks):
         total = 0
-        for block in self.blocks:
+        for block in blocks:
             for field in block.fields:
                 total += len(getattr(field, 'bits', ())) or 1
         return total
 
-    def register_map(self):
-        """The driver's map as plain data, for documentation or export."""
-        return {
+    def register_map(self, device=None):
+        """The driver's map as plain data, for documentation or export.
+
+        A parametric driver has no single map, so passing a device describes
+        that device's, and passing nothing describes the options' `example`
+        configuration -- named in the output, so nobody reads the sample as
+        the whole truth.
+        """
+        blocks = self.blocks_for(device) if device is not None else self.blocks
+        info = {
             'driver': self.name,
             'version': self.version,
             'blocks': [{
@@ -180,15 +364,21 @@ class Driver:
                 'address': b.address,
                 'count': b.count,
                 'fields': [f.describe() for f in b.fields],
-            } for b in self.blocks],
+            } for b in blocks],
         }
+        if self.options:
+            info['options'] = [o.describe() for o in self.options]
+            info['describes'] = (self.resolve_options(device) if device is not None
+                                 else {o.name: o.example for o in self.options})
+        return info
 
     def version_string(self):
         return '%s v%s' % (self.name, self.version)
 
     def __repr__(self):
-        return '<Driver %s v%s, %d blocks, %d fields>' % (
-            self.name, self.version, len(self.blocks), self.field_count)
+        return '<Driver %s v%s, %d blocks, %d fields%s>' % (
+            self.name, self.version, len(self.blocks), self.field_count,
+            ', parametric' if self.parametric else '')
 
 
 class LegacyDriver:
@@ -205,7 +395,15 @@ class LegacyDriver:
         self.version = getattr(module, 'DRIVER_VERSION', '0')
         self.blocks = []
         self.defaults = {}
+        self.options = ()
+        self.parametric = False
         self.description = 'legacy driver module'
+
+    def blocks_for(self, device):
+        return self.blocks
+
+    def resolve_options(self, device):
+        return {}
 
     def read(self, device):
         values = self.module.get_data(
@@ -223,7 +421,7 @@ class LegacyDriver:
             return getter()
         return '%s v%s' % (self.name, self.version)
 
-    def register_map(self):
+    def register_map(self, device=None):
         return {'driver': self.name, 'version': self.version, 'blocks': []}
 
     def __repr__(self):

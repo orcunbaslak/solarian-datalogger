@@ -141,9 +141,59 @@ def test_an_unreachable_device_does_not_stop_the_others(site, monkeypatch):
     assert names == ['INVERTER_1', 'METER_RS485']
 
 
+def test_a_parametric_driver_runs_end_to_end(tmp_path):
+    """A driver whose map is built from configuration, through the real path.
+
+    Its own site rather than the shared one: this is about a device whose
+    register map is a function of tracker_count, not about how it sits
+    alongside four others.
+    """
+    for name in ('config', 'data', 'tmp', 'logs'):
+        (tmp_path / name).mkdir()
+    (tmp_path / 'config' / 'config.yml').write_text("""
+devices:
+  - name: TRACKERS_1
+    driver: trk_eset_subarray
+    enabled: yes
+    measurement: SPP_1
+    slave_id: 1
+    ip_address: 10.0.0.9
+    tracker_count: 10
+""")
+    assert run(tmp_path) == cli.EXIT_OK
+
+    _, payload = written_file(tmp_path)
+    reading, = payload
+    assert reading['Device_Name'] == 'TRACKERS_1'
+    assert reading['Trackers_Polled'] == 10.0
+    assert 'T010_Target_Tilt_Angle' in reading
+    assert 'T011_Target_Tilt_Angle' not in reading
+
+    # Ten trackers is two blocks -- eight, then two -- plus the header.
+    calls = [(c[2], c[3]) for c in fake_modbus.last_master().calls]
+    assert calls == [(30000, 16), (40004, 120), (40124, 30)]
+
+
+def test_a_parametric_driver_without_its_option_is_rejected(tmp_path):
+    """Missing tracker_count must stop the run, not poll an assumed size."""
+    for name in ('config', 'data', 'tmp', 'logs'):
+        (tmp_path / name).mkdir()
+    (tmp_path / 'config' / 'config.yml').write_text("""
+devices:
+  - name: TRACKERS_1
+    driver: trk_eset_subarray
+    enabled: yes
+    measurement: SPP_1
+    slave_id: 1
+    ip_address: 10.0.0.9
+""")
+    assert run(tmp_path) == cli.EXIT_CONFIG
+    assert glob.glob(str(tmp_path / 'data' / '*.json.gz')) == []
+
+
 def test_a_rejected_config_exits_with_the_config_code(site):
     (site / 'config' / 'config.yml').write_text(
-        'devices:\n  - {name: A, driver: d, enabled: yes, measurment: M,\n'
+        'devices:\n  - {name: A, driver: inv_abb_pvs800, enabled: yes, measurment: M,\n'
         '     slave_id: 1, ip_address: 1.2.3.4}\n')
     assert run(site) == cli.EXIT_CONFIG
     assert glob.glob(str(site / 'data' / '*.json.gz')) == []
