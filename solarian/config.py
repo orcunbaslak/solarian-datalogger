@@ -28,10 +28,19 @@ import logging
 
 import yaml
 
+from solarian import driver as driver_registry
+
 log = logging.getLogger('solarian.config')
 
-# Everything a device may say. Anything else is a typo, and typos in this file
-# are silent data loss rather than errors, which is why they are rejected.
+# Everything a device may say to the framework. Anything else is a typo, and
+# typos in this file are silent data loss rather than errors, which is why they
+# are rejected.
+#
+# A device may also carry the options its own driver declares -- a tracker
+# controller's tracker_count, say. Those names are not listed here because they
+# belong to the driver, not to the framework; the allow-list a device is checked
+# against is this set plus that driver's options. The property that matters is
+# unchanged: a key nobody claims is an error, not a shrug.
 ALLOWED_DEVICE_KEYS = frozenset({
     'name', 'driver', 'enabled', 'measurement', 'slave_id',
     'ip_address', 'port',
@@ -212,9 +221,17 @@ def load_devices(path):
     for index, entry in enumerate(_entries(path, 'devices'), start=1):
         name = entry.get('name') if isinstance(entry.get('name'), str) else None
         where = _where(path, 'device', index, name)
-        _check_keys(where, entry, ALLOWED_DEVICE_KEYS, REQUIRED_DEVICE_KEYS)
+
+        options = _driver_options(where, entry)
+        allowed = ALLOWED_DEVICE_KEYS.union(o.name for o in options)
+        _check_keys(where, entry, allowed, REQUIRED_DEVICE_KEYS)
 
         device = dict(entry)
+        for option in options:
+            try:
+                device[option.name] = option.validate(entry.get(option.name))
+            except driver_registry.OptionError as exc:
+                _fail(where, option.name, str(exc))
         for key in DEVICE_TEXT_KEYS:
             text = _check_text(where, entry, key)
             if text is not None:
@@ -248,6 +265,31 @@ def load_devices(path):
     log.debug('%s: %d device(s), %d enabled', path, len(devices),
               sum(1 for d in devices if d['enabled']))
     return devices
+
+
+def _driver_options(where, entry):
+    """The options declared by this device's driver.
+
+    Resolving the driver here is what lets a device carry driver-specific keys
+    without reopening the typo hole. It also closes a gap: a misspelled driver
+    name used to survive --check-config and only surface as a failed device at
+    poll time, which is exactly the silent gap in the data this module exists
+    to prevent.
+    """
+    name = entry.get('driver')
+    if not isinstance(name, str) or not name.strip():
+        # Missing or malformed; _check_keys and _check_text will say so in
+        # their own words. Nothing can be resolved from it here.
+        return ()
+    try:
+        driver = driver_registry.load(name.strip())
+    except driver_registry.DriverNotFound as exc:
+        _fail(where, 'driver', str(exc))
+    except Exception as exc:
+        # The module exists but will not import. That is fatal for this device
+        # either way, and saying so now beats saying so once a minute forever.
+        _fail(where, 'driver', 'driver %r could not be loaded: %s' % (name, exc))
+    return getattr(driver, 'options', ())
 
 
 def _check_transport(where, device):

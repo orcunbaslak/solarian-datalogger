@@ -141,7 +141,7 @@ def test_out_of_range_integers_are_rejected(tmp_path, key, bad):
     path = tmp_path / 'c.yml'
     path.write_text(
         'devices:\n'
-        '  - name: A\n    driver: d\n    enabled: yes\n    measurement: M\n'
+        '  - name: A\n    driver: inv_abb_pvs800\n    enabled: yes\n    measurement: M\n'
         '    slave_id: 1\n    ip_address: 10.0.0.1\n'
         '    %s: %s\n' % (key, bad))
     with pytest.raises(ConfigError) as exc:
@@ -153,7 +153,7 @@ def test_a_valid_device_still_loads(tmp_path):
     path = tmp_path / 'c.yml'
     path.write_text(
         'devices:\n'
-        '  - name: A\n    driver: d\n    enabled: yes\n    measurement: M\n'
+        '  - name: A\n    driver: inv_abb_pvs800\n    enabled: yes\n    measurement: M\n'
         '    slave_id: 247\n    ip_address: 10.0.0.1\n    port: 65535\n')
     assert load_devices(str(path))[0]['slave_id'] == 247
 

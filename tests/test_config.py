@@ -43,7 +43,7 @@ def test_a_valid_config_loads(tmp_path):
 def test_port_defaults_to_502_for_tcp_devices(tmp_path):
     devices = load_devices(write(tmp_path, """
         devices:
-          - {name: A, driver: d, enabled: yes, measurement: M, slave_id: 1,
+          - {name: A, driver: inv_abb_pvs800, enabled: yes, measurement: M, slave_id: 1,
              ip_address: 10.0.0.1}
     """))
     assert devices[0]['port'] == 502
@@ -54,7 +54,7 @@ def test_a_mistyped_key_is_rejected(tmp_path):
     with pytest.raises(ConfigError) as exc:
         load_devices(write(tmp_path, """
             devices:
-              - {name: A, driver: d, enabled: yes, measurment: M, slave_id: 1,
+              - {name: A, driver: inv_abb_pvs800, enabled: yes, measurment: M, slave_id: 1,
                  ip_address: 10.0.0.1}
         """))
     assert 'measurment' in str(exc.value)
@@ -64,7 +64,7 @@ def test_missing_required_key_is_rejected(tmp_path):
     with pytest.raises(ConfigError) as exc:
         load_devices(write(tmp_path, """
             devices:
-              - {name: A, driver: d, enabled: yes, measurement: M,
+              - {name: A, driver: inv_abb_pvs800, enabled: yes, measurement: M,
                  ip_address: 10.0.0.1}
         """))
     assert 'slave_id' in str(exc.value)
@@ -75,9 +75,9 @@ def test_duplicate_device_names_are_rejected(tmp_path):
     with pytest.raises(ConfigError) as exc:
         load_devices(write(tmp_path, """
             devices:
-              - {name: A, driver: d, enabled: yes, measurement: M, slave_id: 1,
+              - {name: A, driver: inv_abb_pvs800, enabled: yes, measurement: M, slave_id: 1,
                  ip_address: 10.0.0.1}
-              - {name: A, driver: d, enabled: yes, measurement: M, slave_id: 2,
+              - {name: A, driver: inv_abb_pvs800, enabled: yes, measurement: M, slave_id: 2,
                  ip_address: 10.0.0.2}
         """))
     assert 'A' in str(exc.value)
@@ -87,14 +87,14 @@ def test_a_device_with_no_transport_is_rejected(tmp_path):
     with pytest.raises(ConfigError):
         load_devices(write(tmp_path, """
             devices:
-              - {name: A, driver: d, enabled: yes, measurement: M, slave_id: 1}
+              - {name: A, driver: inv_abb_pvs800, enabled: yes, measurement: M, slave_id: 1}
         """))
 
 
 def test_a_serial_device_needs_no_ip_address(tmp_path):
     devices = load_devices(write(tmp_path, """
         devices:
-          - {name: A, driver: d, enabled: yes, measurement: M, slave_id: 1,
+          - {name: A, driver: inv_abb_pvs800, enabled: yes, measurement: M, slave_id: 1,
              serial_port: /dev/ttyUSB0, baudrate: 19200}
     """))
     assert devices[0]['serial_port'] == '/dev/ttyUSB0'
@@ -111,7 +111,7 @@ def test_wrongly_typed_values_are_rejected(tmp_path, key, bad):
         load_devices(write(tmp_path, """
             devices:
               - name: A
-                driver: d
+                driver: inv_abb_pvs800
                 enabled: yes
                 measurement: M
                 slave_id: 1
@@ -132,10 +132,74 @@ def test_malformed_yaml_is_a_config_error(tmp_path):
 
 
 def test_allowed_device_keys_covers_the_documented_sample():
-    """The sample config must not use a key the validator rejects."""
+    """The sample config must not use a key nothing claims.
+
+    A device may carry the options its own driver declares, so the allow-list
+    it is checked against is the framework's keys plus that driver's.
+    """
+    from solarian.driver import load as load_driver
+
     devices = load_devices('config/sample-config.yml')
     for device in devices:
-        assert set(device) <= set(ALLOWED_DEVICE_KEYS), set(device) - set(ALLOWED_DEVICE_KEYS)
+        allowed = set(ALLOWED_DEVICE_KEYS).union(
+            o.name for o in load_driver(device['driver']).options)
+        assert set(device) <= allowed, set(device) - allowed
+
+
+# --- driver-declared options ------------------------------------------------
+
+TRACKER = """
+devices:
+  - name: TRACKERS_1
+    driver: trk_eset_subarray
+    enabled: yes
+    measurement: SPP_1
+    slave_id: 1
+    ip_address: 10.0.0.5
+    tracker_count: %s
+"""
+
+
+def test_a_driver_option_is_accepted_and_typed(tmp_path):
+    devices = load_devices(write(tmp_path, TRACKER % 24))
+    assert devices[0]['tracker_count'] == 24
+
+
+def test_a_missing_required_driver_option_is_rejected(tmp_path):
+    """The driver cannot guess how many trackers were installed, so it refuses."""
+    with pytest.raises(ConfigError) as exc:
+        load_devices(write(tmp_path, TRACKER.replace(
+            '    tracker_count: %s\n', '')))
+    assert 'tracker_count' in str(exc.value)
+
+
+@pytest.mark.parametrize('bad', [0, 182, 'many', 'yes'])
+def test_a_bad_driver_option_is_rejected(tmp_path, bad):
+    with pytest.raises(ConfigError) as exc:
+        load_devices(write(tmp_path, TRACKER % bad))
+    assert 'tracker_count' in str(exc.value)
+
+
+def test_a_driver_option_is_not_allowed_on_another_driver(tmp_path):
+    """tracker_count belongs to one driver, not to every device in the file."""
+    with pytest.raises(ConfigError) as exc:
+        load_devices(write(tmp_path, VALID + '    tracker_count: 24\n'))
+    assert 'tracker_count' in str(exc.value)
+
+
+def test_a_mistyped_driver_option_is_rejected(tmp_path):
+    with pytest.raises(ConfigError) as exc:
+        load_devices(write(tmp_path, TRACKER.replace(
+            'tracker_count', 'tracker_cout') % 24))
+    assert 'tracker_cout' in str(exc.value)
+
+
+def test_an_unknown_driver_is_rejected_at_startup(tmp_path):
+    """This used to survive --check-config and fail once a minute instead."""
+    with pytest.raises(ConfigError) as exc:
+        load_devices(write(tmp_path, VALID.replace(
+            'inv_abb_pvs800', 'inv_abb_pvs8000')))
+    assert 'inv_abb_pvs8000' in str(exc.value)
 
 
 def test_mqtt_config_requires_its_fields(tmp_path):

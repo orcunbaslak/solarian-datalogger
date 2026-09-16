@@ -158,6 +158,27 @@ devices:
     baudrate: 19200
 ```
 
+A few devices need a setting only their driver understands. A tracker sub-array
+controller is one Modbus slave fronting however many tracker nodes were
+installed, so its register map is not fixed:
+
+```yaml
+  - name: TRACKERS_1
+    driver: trk_eset_subarray
+    enabled: yes
+    measurement: SPP_1
+    slave_id: 1
+    ip_address: 192.168.1.10
+    tracker_count: 24        # 1..181, required by this driver
+```
+
+Driver options are declared by the driver and checked here at startup like
+every other key, so `tracker_cout:` is still an error rather than a shrug, and
+naming an option on a driver that does not declare it is too. `--register-map`
+lists what a driver accepts. Validating a device now also resolves its driver,
+which closes a gap: a misspelled **driver name** used to survive
+`--check-config` and only surface as a failed device at poll time.
+
 Any device may override the transport tuning. Settings resolve in the order
 **device → driver → framework default**:
 
@@ -236,7 +257,41 @@ Field offsets are positions within the block. Available types: `U16`, `I16`, `U3
 float factor would silently shift about a third of your readings.
 
 Out-of-range offsets are rejected when the module is imported, not at 3am when the
-device is finally read.
+device is finally read. So is a block longer than one Modbus request can return —
+125 registers for `HOLDING` and `INPUT`, 2000 bits for `COILS` and `DISCRETE`.
+
+### A map whose size is a property of the site
+
+Some devices are not a fixed map. A tracker sub-array controller repeats one
+fifteen-register slot once per installed tracker, and only the configuration
+knows how many there are. Such a driver declares the settings it needs and
+passes a function for `blocks`:
+
+```python
+from solarian.driver import Driver, Block, IntOption
+
+def build_blocks(options):
+    return [...]                       # receives the validated options
+
+DRIVER = Driver(
+    name='MY_CONTROLLER',
+    version='0.1',
+    options=[IntOption('tracker_count', 1, 181,
+                       help='trackers this controller fronts')],
+    blocks=build_blocks,
+)
+```
+
+`config.py` folds those names into its allow-list, so they are validated at
+startup alongside every other key. An `IntOption` with no `default` is
+required: where guessing would be worse than refusing to start, the logger
+refuses to start.
+
+The function receives the options and nothing else, which is what makes the
+result safe to cache — the same options always give the same map, so two
+devices differing only in `slave_id` share one, and it is built and validated
+once rather than once per poll. Duplicate field names and out-of-range offsets
+are rejected in a generated map exactly as in a declared one.
 
 For a genuine device quirk that a register map cannot express — a sensor that reports
 negative irradiation at night, say — use the escape hatch:
@@ -268,7 +323,7 @@ changed.
 ```
 
 Drivers are covered by a golden snapshot, `tests/golden_drivers.json`, captured from
-the original hand-written drivers. It pins 392 decoded values across all 10 devices
+the original hand-written drivers. It pins 411 decoded values across all 11 devices
 against a deterministic fake transport, so if a divisor, a register address or a bit
 index ever moves, the test names the field that changed. No hardware required.
 

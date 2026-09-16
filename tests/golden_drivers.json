@@ -618,5 +618,48 @@
       "Ref_Cell_Temp": -1847.8
     },
     "version": "SENSORS_IRRADIATION_VANARISU v0.1"
+  },
+  "trk_eset_subarray": {
+    "endpoint": [
+      "10.0.0.9",
+      502
+    ],
+    "modbus_calls": [
+      [
+        1,
+        3,
+        30000,
+        16
+      ],
+      [
+        1,
+        3,
+        40004,
+        45
+      ]
+    ],
+    "transport": "FakeTcpMaster",
+    "values": {
+      "Date": "<utc-minute>",
+      "Device_Name": "DEVICE_UNDER_TEST",
+      "End_Address": 59884,
+      "Measurement_Suffix": "SPP_TEST",
+      "Start_Address": 39365,
+      "T001_Fault": 16055,
+      "T001_Target_Inclination": 264.17,
+      "T001_Target_Tilt_Angle": 254.23,
+      "T002_Fault": 37046,
+      "T002_Target_Inclination": -305.27,
+      "T002_Target_Tilt_Angle": -64.96,
+      "T003_Fault": 8539,
+      "T003_Target_Inclination": 279.36,
+      "T003_Target_Tilt_Angle": 105.1,
+      "Trackers_Faulted": 3.0,
+      "Trackers_Polled": 3.0,
+      "Wind_Direction": 22238.0,
+      "Wind_Speed": 56.29,
+      "Working_Mode": 15154
+    },
+    "version": "ESET_TRACKER_SUBARRAY v0.1"
   }
 }
